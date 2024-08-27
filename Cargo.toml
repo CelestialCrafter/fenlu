@@ -1,0 +1,12 @@
+[package]
+name = "fenlu"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cxx = "1.0.126"
+cxx-qt = "0.6.1"
+cxx-qt-lib = "0.6.1"
+
+[build-dependencies]
+cxx-qt-build = { version = "0.6.1", features = ["link_qt_object_files"] }
