@@ -3,15 +3,17 @@ use std::{path::PathBuf, sync::Arc};
 use eyre::Result;
 use fluent_uri::UriRef;
 use glob::glob;
-use mlua::{ExternalResult, Lua, MultiValue};
+use mlua::{ExternalResult, Lua, LuaSerdeExt, Value};
 use tokio::{
     sync::mpsc::{self, Receiver, Sender},
     task,
 };
 
+use crate::metadata::Metadata;
+
 use super::fennel::compile_fennel;
 
-async fn create_source(path: PathBuf, tx: Arc<Sender<UriRef<String>>>) -> Result<()> {
+async fn create_source(path: PathBuf, tx: Arc<Sender<Metadata>>) -> Result<()> {
     let (compiled, config) = compile_fennel(path).expect("fennel compilation should not fail");
 
     unsafe {
@@ -20,16 +22,16 @@ async fn create_source(path: PathBuf, tx: Arc<Sender<UriRef<String>>>) -> Result
 
         globals.set(
             "add_uri",
-            lua.create_function(move |_, uri_string: MultiValue| {
+            lua.create_function(move |lua, metadata: Value| {
                 let tx = tx.clone();
+                let metadata: Metadata = lua.from_value(metadata).unwrap();
 
-                let uri = UriRef::parse(uri_string).into_lua_err()?;
-                if !uri.is_uri() {
+                if !metadata.uri.is_uri() {
                     Err("uri is invalid").into_lua_err()?;
                 }
 
                 task::spawn(async move {
-                    tx.send(uri).await.expect("reciever should not drop");
+                    tx.send(metadata).await.expect("reciever should not drop");
                 });
 
                 Ok(())
@@ -42,7 +44,7 @@ async fn create_source(path: PathBuf, tx: Arc<Sender<UriRef<String>>>) -> Result
     Ok(())
 }
 
-pub fn create_merged_source() -> Receiver<UriRef<String>> {
+pub fn create_merged_source() -> Receiver<Metadata> {
     // @TODO find good buffer size
     let (tx, rx) = mpsc::channel(1000);
     let tx = Arc::new(tx);
