@@ -15,9 +15,5 @@ pub struct Metadata {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum Extra {
-    Image {
-        width: u64,
-        height: u64
-    },
+    Image { width: u64, height: u64 },
 }
-

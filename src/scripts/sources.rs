@@ -1,7 +1,6 @@
 use std::{path::PathBuf, sync::Arc};
 
 use eyre::Result;
-use fluent_uri::UriRef;
 use glob::glob;
 use mlua::{ExternalResult, Lua, LuaSerdeExt, Value};
 use tokio::{
@@ -13,7 +12,7 @@ use crate::metadata::Metadata;
 
 use super::fennel::compile_fennel;
 
-async fn create_source(path: PathBuf, tx: Arc<Sender<Metadata>>) -> Result<()> {
+fn create_source(path: PathBuf, tx: Arc<Sender<Metadata>>) -> Result<()> {
     let (compiled, config) = compile_fennel(path).expect("fennel compilation should not fail");
 
     unsafe {
@@ -24,7 +23,7 @@ async fn create_source(path: PathBuf, tx: Arc<Sender<Metadata>>) -> Result<()> {
             "add_uri",
             lua.create_function(move |lua, metadata: Value| {
                 let tx = tx.clone();
-                let metadata: Metadata = lua.from_value(metadata).unwrap();
+                let metadata: Metadata = lua.from_value(metadata)?;
 
                 if !metadata.uri.is_uri() {
                     Err("uri is invalid").into_lua_err()?;
@@ -51,10 +50,10 @@ pub fn create_merged_source() -> Receiver<Metadata> {
     let mut handles = vec![];
 
     for path in glob("scripts/*-source.fnl").expect("glob should be valid") {
-        handles.push(task::spawn(create_source(
-            path.expect("glob should not error"),
-            tx.clone()
-        )));
+        let tx = tx.clone();
+        handles.push(task::spawn(async move {
+            create_source(path.expect("glob should not error"), tx)
+        }));
     }
 
     task::spawn(async {
