@@ -7,6 +7,14 @@ edition = "2021"
 cxx = "1.0.126"
 cxx-qt = "0.6.1"
 cxx-qt-lib = "0.6.1"
+eyre = "0.6.12"
+fluent-uri = "0.2.0"
+futures = "0.3.30"
+glob = "0.3.1"
+log = "0.4.22"
+mlua = { version = "0.9.9", features = ["lua54"] }
+tokio = { version = "1.39.3", features = ["macros", "rt", "rt-multi-thread", "sync"] }
+uris = "0.1.1"
 
 [build-dependencies]
 cxx-qt-build = { version = "0.6.1", features = ["link_qt_object_files"] }
