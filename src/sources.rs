@@ -1,49 +1,57 @@
+use std::{path::PathBuf, sync::Arc};
+
 use crate::fennel::compile_fennel;
-use eyre::Error;
+use eyre::Result;
 use fluent_uri::UriRef;
 use glob::glob;
 use mlua::{ExternalResult, Lua};
 use tokio::{
-    sync::mpsc::{self, Receiver},
+    sync::mpsc::{self, Receiver, Sender},
     task,
 };
+
+async fn create_source(path: PathBuf, tx: Arc<Sender<UriRef<String>>>) -> Result<()> {
+    let compiled = compile_fennel(path).expect("fennel compilation should not fail");
+
+    unsafe {
+        let lua = Lua::unsafe_new();
+        let globals = lua.globals();
+
+        globals.set(
+            "add_uri",
+            lua.create_function(move |_, uri_string: String| {
+                let tx = tx.clone();
+
+                let uri = UriRef::parse(uri_string).into_lua_err()?;
+                if !uri.is_uri() {
+                    Err("uri is invalid").into_lua_err()?;
+                }
+
+                task::spawn(async move {
+                    tx.send(uri).await.expect("reciever should not drop");
+                });
+
+                Ok(())
+            })?,
+        )?;
+
+        lua.load(&compiled).exec()?;
+    }
+
+    Ok(())
+}
 
 pub fn create_merged_source() -> Receiver<UriRef<String>> {
     // @TODO find good buffer size
     let (tx, rx) = mpsc::channel(1000);
+    let tx = Arc::new(tx);
     let mut handles = vec![];
 
-    for script_path in glob("scripts/*-source.fnl").expect("glob should be valid") {
-        let tx = tx.clone();
-        let script = async move {
-            let script_path = script_path?;
-            unsafe {
-                let lua = Lua::unsafe_new();
-                let globals = lua.globals();
-
-                globals.set(
-                    "add_uri",
-                    lua.create_function(move |_, uri_string: String| {
-                        let tx = tx.clone();
-                        let uri = UriRef::parse(uri_string).into_lua_err()?;
-                        if !uri.is_uri() {
-                            Err("uri is invalid").into_lua_err()?;
-                        }
-                        task::spawn(async move {
-                            tx.send(uri).await.expect("reciever should not drop");
-                        });
-                        Ok(())
-                    })?,
-                )?;
-
-                let compiled =
-                    compile_fennel(script_path).expect("fennel compilation should not fail");
-                lua.load(&compiled).exec()?;
-                Ok::<(), Error>(())
-            }
-        };
-
-        handles.push(task::spawn(script));
+    for path in glob("scripts/*-source.fnl").expect("glob should be valid") {
+        handles.push(task::spawn(create_source(
+            path.expect("glob should not error"),
+            tx.clone()
+        )));
     }
 
     task::spawn(async {
