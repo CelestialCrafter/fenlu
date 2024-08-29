@@ -1,6 +1,6 @@
 use std::{path::PathBuf, sync::Arc};
 
-use crate::fennel::compile_fennel;
+use super::{config::load_config, fennel::compile_fennel};
 use eyre::Result;
 use fluent_uri::UriRef;
 use glob::glob;
@@ -11,7 +11,8 @@ use tokio::{
 };
 
 async fn create_source(path: PathBuf, tx: Arc<Sender<UriRef<String>>>) -> Result<()> {
-    let compiled = compile_fennel(path).expect("fennel compilation should not fail");
+    let compiled = compile_fennel(path.clone()).expect("fennel compilation should not fail");
+    let config = load_config(path)?;
 
     unsafe {
         let lua = Lua::unsafe_new();
@@ -35,7 +36,7 @@ async fn create_source(path: PathBuf, tx: Arc<Sender<UriRef<String>>>) -> Result
             })?,
         )?;
 
-        lua.load(&compiled).exec()?;
+        lua.load(&compiled).call(config)?;
     }
 
     Ok(())

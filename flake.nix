@@ -21,6 +21,7 @@
           fennel
           luafilesystem
           lua-curl
+          lua-toml
         ];
       };
     };

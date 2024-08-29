@@ -1,3 +1,6 @@
 (local lfs (require :lfs))
-(let [schema "file://" path "/home/celestial/Documents/projects/fenlu/"]
+(local toml (require :toml))
+
+(local config (toml.parse ...))
+(let [schema "file://" path (. config "path")]
   (each [file (lfs.dir path)] (add_uri (.. schema path file))))
