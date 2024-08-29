@@ -13,6 +13,7 @@ futures = "0.3.30"
 glob = "0.3.1"
 log = "0.4.22"
 mlua = { version = "0.9.9", features = ["lua54"] }
+serde = "1.0.209"
 tokio = { version = "1.39.3", features = ["macros", "rt", "rt-multi-thread", "sync"] }
 uris = "0.1.1"
 

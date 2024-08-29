@@ -1,18 +1,18 @@
 use std::{path::PathBuf, sync::Arc};
 
-use super::{config::load_config, fennel::compile_fennel};
 use eyre::Result;
 use fluent_uri::UriRef;
 use glob::glob;
-use mlua::{ExternalResult, Lua};
+use mlua::{ExternalResult, Lua, MultiValue};
 use tokio::{
     sync::mpsc::{self, Receiver, Sender},
     task,
 };
 
+use super::fennel::compile_fennel;
+
 async fn create_source(path: PathBuf, tx: Arc<Sender<UriRef<String>>>) -> Result<()> {
-    let compiled = compile_fennel(path.clone()).expect("fennel compilation should not fail");
-    let config = load_config(path)?;
+    let (compiled, config) = compile_fennel(path).expect("fennel compilation should not fail");
 
     unsafe {
         let lua = Lua::unsafe_new();
@@ -20,7 +20,7 @@ async fn create_source(path: PathBuf, tx: Arc<Sender<UriRef<String>>>) -> Result
 
         globals.set(
             "add_uri",
-            lua.create_function(move |_, uri_string: String| {
+            lua.create_function(move |_, uri_string: MultiValue| {
                 let tx = tx.clone();
 
                 let uri = UriRef::parse(uri_string).into_lua_err()?;

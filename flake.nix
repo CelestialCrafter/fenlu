@@ -21,7 +21,8 @@
           fennel
           luafilesystem
           lua-curl
-          lua-toml
+          toml-edit
+          exiftool
         ];
       };
     };
