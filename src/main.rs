@@ -1,4 +1,5 @@
 pub mod scripts;
+pub mod metadata;
 
 use eyre::Result;
 use scripts::sources::create_merged_source;
