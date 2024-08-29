@@ -8,7 +8,7 @@ use scripts::sources::create_merged_source;
 async fn main() -> Result<()> {
     let mut source = create_merged_source();
     while let Some(i) = source.recv().await {
-        println!("got = {}", i);
+        println!("got = {:?}", i);
     }
 
     Ok(())
