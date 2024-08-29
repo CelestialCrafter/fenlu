@@ -3,7 +3,10 @@ use eyre::Error;
 use fluent_uri::UriRef;
 use glob::glob;
 use mlua::{ExternalResult, Lua};
-use tokio::{sync::mpsc::{self, Receiver}, task};
+use tokio::{
+    sync::mpsc::{self, Receiver},
+    task,
+};
 
 pub fn create_merged_source() -> Receiver<UriRef<String>> {
     // @TODO find good buffer size
@@ -13,27 +16,31 @@ pub fn create_merged_source() -> Receiver<UriRef<String>> {
     for script_path in glob("scripts/*-source.fnl").expect("glob should be valid") {
         let tx = tx.clone();
         let script = async move {
-            let lua = Lua::new();
-            let globals = lua.globals();
+            let script_path = script_path?;
+            unsafe {
+                let lua = Lua::unsafe_new();
+                let globals = lua.globals();
 
-            globals.set(
-                "add_uri",
-                lua.create_function(move |_, uri_string: String| {
-                    let tx = tx.clone();
-                    let uri = UriRef::parse(uri_string).into_lua_err()?;
-                    if !uri.is_uri() {
-                        Err("uri is invalid").into_lua_err()?;
-                    }
-                    task::spawn(async move {
-                        tx.send(uri).await.expect("reciever should not drop");
-                    });
-                    Ok(())
-                })?
-            )?;
+                globals.set(
+                    "add_uri",
+                    lua.create_function(move |_, uri_string: String| {
+                        let tx = tx.clone();
+                        let uri = UriRef::parse(uri_string).into_lua_err()?;
+                        if !uri.is_uri() {
+                            Err("uri is invalid").into_lua_err()?;
+                        }
+                        task::spawn(async move {
+                            tx.send(uri).await.expect("reciever should not drop");
+                        });
+                        Ok(())
+                    })?,
+                )?;
 
-            let compiled = compile_fennel(script_path?).expect("fennel compilation should not fail");
-            lua.load(&compiled).exec()?;
-            Ok::<(), Error>(())
+                let compiled =
+                    compile_fennel(script_path).expect("fennel compilation should not fail");
+                lua.load(&compiled).exec()?;
+                Ok::<(), Error>(())
+            }
         };
 
         handles.push(task::spawn(script));
@@ -41,7 +48,10 @@ pub fn create_merged_source() -> Receiver<UriRef<String>> {
 
     task::spawn(async {
         for handle in handles {
-            let _ = handle.await.expect("source should not error");
+            handle
+                .await
+                .expect("handle should not error")
+                .expect("source should not error");
         }
     });
 
