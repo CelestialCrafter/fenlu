@@ -1,8 +1,7 @@
-pub mod fennel;
-pub mod sources;
+pub mod scripts;
 
 use eyre::Result;
-use sources::create_merged_source;
+use scripts::sources::create_merged_source;
 
 #[tokio::main]
 async fn main() -> Result<()> {
