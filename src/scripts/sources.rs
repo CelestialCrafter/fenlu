@@ -1,52 +1,45 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::mpsc::{channel, Sender}};
 
 use eyre::Result;
 use glob::glob;
 use mlua::{ExternalResult, Lua, LuaSerdeExt, Value};
-use tokio::{
-    sync::mpsc::{self, Receiver, Sender},
-    task,
-};
+use tokio::task;
 
 use crate::metadata::Metadata;
 
 use super::fennel::compile_fennel;
 
-fn create_source(path: PathBuf, tx: Arc<Sender<Metadata>>) -> Result<()> {
-    let (compiled, config) = compile_fennel(path).expect("fennel compilation should not fail");
+fn create_source(path: PathBuf, tx: Sender<Metadata>) -> Result<()> {
+    let (compiled, config) = compile_fennel(path.clone()).expect("fennel compilation should not fail");
+    let name = path.file_name().unwrap().to_os_string().into_string().expect("path should be utf-8");
 
-    unsafe {
-        let lua = Lua::unsafe_new();
-        let globals = lua.globals();
+    let lua = unsafe { Lua::unsafe_new() };
+    let globals = lua.globals();
 
-        globals.set(
-            "add_uri",
-            lua.create_function(move |lua, metadata: Value| {
-                let tx = tx.clone();
-                let metadata: Metadata = lua.from_value(metadata)?;
+    globals.set(
+        "add_uri",
+        lua.create_function(move |lua, metadata: Value| {
+            let tx = tx.clone();
+            let mut metadata: Metadata = lua.from_value(metadata)?;
+            metadata.source = name.clone();
 
-                if !metadata.uri.is_uri() {
-                    Err("uri is invalid").into_lua_err()?;
-                }
+            if !metadata.uri.is_uri() {
+                Err("uri is invalid").into_lua_err()?;
+            }
 
-                task::spawn(async move {
-                    tx.send(metadata).await.expect("reciever should not drop");
-                });
+            tx.send(metadata).expect("reciever should not drop");
 
-                Ok(())
-            })?,
-        )?;
+            Ok(())
+        })?,
+    )?;
 
-        lua.load(&compiled).call(config)?;
-    }
+    lua.load(&compiled).call(config)?;
 
     Ok(())
 }
 
-pub fn create_merged_source() -> Receiver<Metadata> {
-    // @TODO find good buffer size
-    let (tx, rx) = mpsc::channel(1000);
-    let tx = Arc::new(tx);
+pub async fn apply_sources() -> Result<impl Iterator<Item = Metadata>> {
+    let (tx, rx) = channel();
     let mut handles = vec![];
 
     for path in glob("scripts/*-source.fnl").expect("glob should be valid") {
@@ -62,8 +55,8 @@ pub fn create_merged_source() -> Receiver<Metadata> {
                 .await
                 .expect("handle should not error")
                 .expect("source should not error");
-        }
+            }
     });
 
-    rx
+    Ok(rx.into_iter())
 }
