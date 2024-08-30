@@ -29,7 +29,7 @@ impl Transform {
 
 pub fn apply_transforms<'a>(
     input: impl Iterator<Item = Metadata> + 'a
-) -> Result<Box<dyn Iterator<Item = Metadata> + 'a>> {
+) -> Result<impl Iterator<Item = Metadata> + 'a> {
     let mut transforms: Vec<(PathBuf, Result<Transform>)> = glob("scripts/*-transform.fnl")
         .expect("glob should be valid")
         .map(|path| path.expect("glob should not error"))

@@ -26,7 +26,7 @@ impl Filter {
 
 pub fn apply_filters<'a>(
     input: impl Iterator<Item = Metadata> + 'a
-) -> Result<Box<dyn Iterator<Item = Metadata> + 'a>> {
+) -> Result<impl Iterator<Item = Metadata> + 'a> {
     let filters: Vec<Filter> = glob("scripts/*-filter.fnl")
         .expect("glob should be valid")
         .map(|path| path.expect("glob should not error"))
