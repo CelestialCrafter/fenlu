@@ -4,7 +4,7 @@ pub mod scripts;
 use std::{fs::File, io::ErrorKind};
 
 use eyre::Result;
-use scripts::{filters::apply_filters, sources::apply_sources};
+use scripts::{filters::apply_filters, sources::apply_sources, transforms::apply_transforms};
 use sqlx::{Connection, SqliteConnection};
 use tracing_subscriber::Registry;
 
@@ -38,7 +38,8 @@ async fn main() {
         .await.expect("creating media table should succeed");
 
     let source = apply_sources().await.expect("applying sources should succeed");
-    let filtered = apply_filters(source).expect("applying filters should succeed");
+    let transformed = apply_transforms(source).expect("applying transforms should succeed");
+    let filtered = apply_filters(transformed).expect("applying filters should succeed");
 
     for media in filtered {
         sqlx::query("INSERT OR IGNORE INTO media (uri, metadata) VALUES ($1, $2)")

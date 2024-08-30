@@ -15,8 +15,8 @@
           _ default))))
 
 (fn filter [metadata]
-  (if (not (?. metadata :Image))
+  (if (not= metadata.type "Image")
       true
-      (and (apply-op metadata.Image.width (tonumber (?. config.width :value)) (?. config.width :op))
-           (apply-op metadata.Image.height (tonumber (?. config.height :value)) (?. config.height :op)))))
+      (and (apply-op metadata.width (tonumber (?. config.width :value)) (?. config.width :op))
+           (apply-op metadata.height (tonumber (?. config.height :value)) (?. config.height :op)))))
 
