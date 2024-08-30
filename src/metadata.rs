@@ -16,6 +16,7 @@ pub struct Metadata {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(tag = "type")]
 pub enum Extra {
     Image { width: u64, height: u64 },
 }

@@ -1,4 +1,3 @@
-use std::path::PathBuf;
 use eyre::Result;
 use glob::glob;
 use mlua::{Function, Lua, LuaSerdeExt, RegistryKey};
@@ -11,9 +10,9 @@ pub struct Filter {
 }
 
 impl Filter {
-    pub fn new(compiled: &str, config: &str) -> Result<Self> {
+    pub fn new(compiled: String, config: String) -> Result<Self> {
         let lua = unsafe { Lua::unsafe_new() };
-        let filter_fn = lua.load(compiled).call::<String, Function>(config.to_string())?;
+        let filter_fn = lua.load(compiled).call::<String, Function>(config)?;
         let key = lua.create_registry_value(filter_fn)?;
 
         Ok(Filter { lua, key })
@@ -28,22 +27,14 @@ impl Filter {
 pub fn apply_filters<'a>(
     input: impl Iterator<Item = Metadata> + 'a
 ) -> Result<Box<dyn Iterator<Item = Metadata> + 'a>> {
-    let filters: Vec<(PathBuf, Result<Filter>)> = glob("scripts/*-filter.fnl")
+    let filters: Vec<Filter> = glob("scripts/*-filter.fnl")
         .expect("glob should be valid")
         .map(|path| path.expect("glob should not error"))
         .map(|path| {
             let (compiled, config) = compile_fennel(path.clone()).expect("fennel compilation should not fail");
-            let filter = Filter::new(&compiled, &config);
-            (path, filter)
+            Filter::new(compiled, config)
         })
-        .collect();
-
-    let mut filters: Vec<Filter> = filters
-        .into_iter()
-        .map(|(path, filter)| filter.map_err(|e| eyre::eyre!("Failed to create filter for {:?}: {}", path, e)))
         .collect::<Result<Vec<Filter>>>()?;
-    
-    filters.sort_by_key(|_| std::cmp::Reverse(0)); // This is a no-op sort, replace with actual sorting logic if needed
 
     let output = filters.into_iter().fold(
         Box::new(input) as Box<dyn Iterator<Item = Metadata> + 'a>,
