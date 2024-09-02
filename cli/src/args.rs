@@ -4,8 +4,6 @@ use eyre::{eyre, Error, Result};
 use globset::Glob;
 use pico_args::Arguments;
 
-use crate::scripts::sources;
-
 #[derive(Debug)]
 pub struct Args {
     pub source_mode: SourceMode,
@@ -48,7 +46,13 @@ enum Destination {
 }
 
 pub fn parse_args() -> Result<Args> {
-    let mut args = Arguments::from_env();
+    let mut pico_args = Arguments::from_env();
+    let mut args = Args {
+        source_mode: pico_args.value_from_str("--source-mode").unwrap_or_default(),
+        sources: vec![],
+        transforms: vec![],
+        filters: vec![]
+    };
 
     let mut sources = vec![];
     let mut transforms = vec![];
@@ -64,7 +68,7 @@ pub fn parse_args() -> Result<Args> {
             };
         }
 
-        result = args.free_from_fn::<Option<(Destination, PathBuf)>, Error>(|path| {
+        result = pico_args.free_from_fn::<Option<(Destination, PathBuf)>, Error>(|path| {
             let source_glob = Glob::new("*-source.fnl")?.compile_matcher();
             let transform_glob = Glob::new("*-transform.fnl")?.compile_matcher();
             let filter_glob = Glob::new("*-filter.fnl")?.compile_matcher();
@@ -80,12 +84,11 @@ pub fn parse_args() -> Result<Args> {
                 None
             })
         });
-    };
+    }
 
-    Ok(Args {
-        source_mode: args.value_from_str("--source-mode").unwrap_or_default(),
-        sources,
-        transforms,
-        filters,
-    })
+    args.sources = sources;
+    args.filters = filters;
+    args.transforms = transforms;
+
+    Ok(args)
 }

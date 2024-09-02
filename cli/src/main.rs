@@ -49,6 +49,7 @@ async fn main() {
             .await.expect("creating media table should succeed");
     }
 
+    // @TODO support SourceMode::Load
     let source = apply_sources(args.sources).await.expect("applying sources should succeed");
     let transformed = apply_transforms(args.transforms, source).expect("applying transforms should succeed");
 

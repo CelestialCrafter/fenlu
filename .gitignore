@@ -1,0 +1,7 @@
+# configs
+scripts/*.toml
+
+# db
+*.db
+*.db-journal
+
