@@ -25,7 +25,7 @@ Cargo.lock
 /target
 
 # configs
-*.toml
+scripts/*.toml
 
 *.db
 *.db-journal

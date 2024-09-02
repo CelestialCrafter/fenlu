@@ -9,8 +9,9 @@ cxx-qt = "0.6.1"
 cxx-qt-lib = "0.6.1"
 eyre = "0.6.12"
 fluent-uri = { version = "0.2.0", features = ["serde"] }
-glob = "0.3.1"
+globset = "0.4.14"
 mlua = { version = "0.9.9", features = ["lua54", "serialize"] }
+pico-args = "0.5.0"
 serde = { version = "1.0.209", features = ["derive"] }
 serde_json = "1.0.127"
 sqlx = { version = "0.8.1", features = ["runtime-tokio", "sqlite"] }
