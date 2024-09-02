@@ -4,9 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-cxx = "1.0.126"
-cxx-qt = "0.6.1"
-cxx-qt-lib = "0.6.1"
 eyre = "0.6.12"
 fluent-uri = { version = "0.2.0", features = ["serde"] }
 globset = "0.4.14"
@@ -20,5 +17,3 @@ tracing = "0.1.40"
 tracing-subscriber = "0.3.18"
 uris = "0.1.1"
 
-[build-dependencies]
-cxx-qt-build = { version = "0.6.1", features = ["link_qt_object_files"] }
