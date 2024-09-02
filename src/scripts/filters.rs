@@ -1,5 +1,6 @@
+use std::path::PathBuf;
+
 use eyre::Result;
-use glob::glob;
 use mlua::{Function, Lua, LuaSerdeExt, RegistryKey};
 use crate::metadata::Metadata;
 use super::fennel::compile_fennel;
@@ -25,11 +26,10 @@ impl Filter {
 }
 
 pub fn apply_filters<'a>(
+    paths: Vec<PathBuf>,
     input: impl Iterator<Item = Metadata> + 'a
 ) -> Result<impl Iterator<Item = Metadata> + 'a> {
-    let filters: Vec<Filter> = glob("scripts/*-filter.fnl")
-        .expect("glob should be valid")
-        .map(|path| path.expect("glob should not error"))
+    let filters: Vec<Filter> = paths.into_iter()
         .map(|path| {
             let (compiled, config) = compile_fennel(path.clone()).expect("fennel compilation should not fail");
             Filter::new(compiled, config)

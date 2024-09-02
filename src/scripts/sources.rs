@@ -1,7 +1,6 @@
 use std::{path::PathBuf, sync::mpsc::{channel, Sender}};
 
 use eyre::Result;
-use glob::glob;
 use mlua::{ExternalResult, Lua, LuaSerdeExt, Value};
 use tokio::task;
 
@@ -38,14 +37,14 @@ fn create_source(path: PathBuf, tx: Sender<Metadata>) -> Result<()> {
     Ok(())
 }
 
-pub async fn apply_sources() -> Result<impl Iterator<Item = Metadata>> {
+pub async fn apply_sources(paths: Vec<PathBuf>) -> Result<impl Iterator<Item = Metadata>> {
     let (tx, rx) = channel();
     let mut handles = vec![];
 
-    for path in glob("scripts/*-source.fnl").expect("glob should be valid") {
+    for path in paths {
         let tx = tx.clone();
         handles.push(task::spawn(async move {
-            create_source(path.expect("glob should not error"), tx)
+            create_source(path, tx)
         }));
     }
 
