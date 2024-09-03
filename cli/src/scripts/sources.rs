@@ -1,7 +1,7 @@
 use std::{path::PathBuf, sync::mpsc::{channel, Sender}};
 
-use eyre::{eyre, Result};
-use mlua::{ExternalResult, Lua, LuaSerdeExt, Value};
+use eyre::Result;
+use mlua::{Lua, LuaSerdeExt, Value};
 use sqlx::{FromRow, SqliteConnection};
 use tokio::task;
 
