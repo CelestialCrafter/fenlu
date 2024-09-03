@@ -54,6 +54,7 @@ pub fn parse_args() -> Result<Args> {
         filters: vec![]
     };
 
+    // parse script paths
     let mut sources = vec![];
     let mut transforms = vec![];
     let mut filters = vec![];
