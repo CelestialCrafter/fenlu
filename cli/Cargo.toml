@@ -1,5 +1,5 @@
 [package]
-name = "fenlu"
+name = "fenlu-cli"
 version = "0.1.0"
 edition = "2021"
 
