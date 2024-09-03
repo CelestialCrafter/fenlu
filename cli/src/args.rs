@@ -48,7 +48,7 @@ enum Destination {
 pub fn parse_args() -> Result<Args> {
     let mut pico_args = Arguments::from_env();
     let mut args = Args {
-        source_mode: pico_args.value_from_str("--source-mode").unwrap_or_default(),
+        source_mode: pico_args.value_from_str("--source-mode").unwrap_or(pico_args.value_from_str("-m").unwrap_or_default()),
         sources: vec![],
         transforms: vec![],
         filters: vec![]
