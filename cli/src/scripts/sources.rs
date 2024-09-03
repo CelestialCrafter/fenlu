@@ -2,6 +2,7 @@ use std::{path::PathBuf, sync::mpsc::{channel, Sender}};
 
 use eyre::Result;
 use mlua::{ExternalResult, Lua, LuaSerdeExt, Value};
+use sqlx::{FromRow, SqliteConnection};
 use tokio::task;
 
 use crate::metadata::Metadata;
@@ -37,7 +38,26 @@ fn create_source(path: PathBuf, tx: Sender<Metadata>) -> Result<()> {
     Ok(())
 }
 
-pub async fn apply_sources(paths: Vec<PathBuf>) -> Result<impl Iterator<Item = Metadata>> {
+#[derive(FromRow)]
+struct MetadataRowString {
+    metadata: String
+}
+
+pub async fn load_sources(conn: &mut SqliteConnection, paths: Vec<PathBuf>) -> Result<Box<dyn Iterator<Item = Metadata>>> {
+    // @TODO load only sources provided by paths arg
+    //let sources = paths.into_iter().map(|path| path.file_name().unwrap().to_os_string().into_string().expect("path should be utf-8"));
+    _ = paths;
+
+    Ok(Box::new(sqlx::query_as::<_, MetadataRowString>("SELECT metadata FROM media")
+        .fetch_all(conn)
+        .await?
+        .into_iter()
+        .map(|m| -> Metadata {
+            serde_json::from_str(m.metadata.as_str()).expect("metadata column should decode to Metadata")
+        })))
+}
+
+pub async fn create_sources(paths: Vec<PathBuf>) -> Result<Box<dyn Iterator<Item = Metadata>>> {
     let (tx, rx) = channel();
     let mut handles = vec![];
 
@@ -57,5 +77,5 @@ pub async fn apply_sources(paths: Vec<PathBuf>) -> Result<impl Iterator<Item = M
             }
     });
 
-    Ok(rx.into_iter())
+    Ok(Box::new(rx.into_iter()))
 }
