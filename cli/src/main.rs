@@ -6,7 +6,7 @@ use std::{fs::File, io::ErrorKind, sync::mpsc::channel};
 
 use args::{parse_args, SourceMode};
 use eyre::Result;
-use scripts::{filters::apply_filters, sources::apply_sources, transforms::apply_transforms};
+use scripts::{filters::apply_filters, sources::{load_sources, create_sources}, transforms::apply_transforms};
 use sqlx::{Connection, SqliteConnection};
 use tokio::task;
 use tracing_subscriber::Registry;
@@ -24,6 +24,18 @@ fn create_db_file() -> Result<()> {
     }
 }
 
+async fn create_media_table(conn: &mut SqliteConnection) -> Result<()> {
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS media (
+            uri TEXT PRIMARY KEY,
+            metadata TEXT NOT NULL
+        )",
+    )
+        .execute(conn)
+        .await?;
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() {
     let args = parse_args().expect("parsing args should succeed");
@@ -38,19 +50,15 @@ async fn main() {
         SourceMode::Calculate => None,
         _ => Some(SqliteConnection::connect("fenlu.db").await.expect("connecting to db should succeed")),
     };
+
     if let Some(ref mut conn) = conn {
-        sqlx::query(
-            "CREATE TABLE IF NOT EXISTS media (
-                uri TEXT PRIMARY KEY,
-                metadata TEXT NOT NULL
-            )",
-        )
-            .execute(conn)
-            .await.expect("creating media table should succeed");
+        create_media_table(conn).await.expect("creating media table should succeed");
     }
 
-    // @TODO support SourceMode::Load
-    let source = apply_sources(args.sources).await.expect("applying sources should succeed");
+    let source = match args.source_mode {
+        SourceMode::Load => load_sources(conn.as_mut().unwrap(), args.sources).await.expect("loading sources from db should succeed"),
+        _ => create_sources(args.sources).await.expect("creating sources should succeed")
+    };
     let transformed = apply_transforms(args.transforms, source).expect("applying transforms should succeed");
 
     let (tx, rx) = channel();
