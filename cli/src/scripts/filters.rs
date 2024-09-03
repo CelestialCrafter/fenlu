@@ -40,7 +40,13 @@ pub fn apply_filters<'a>(
         Box::new(input) as Box<dyn Iterator<Item = Metadata> + 'a>,
         |acc, filter| {
             Box::new(acc.filter(move |metadata| {
-                filter.apply(metadata).expect("filter should succeed")
+                let applied = filter.apply(&metadata);
+                if let Err(error) = applied {
+                    eprintln!("filter error: {error}");
+                    return false;
+                }
+
+                applied.unwrap()
             }))
         },
     );

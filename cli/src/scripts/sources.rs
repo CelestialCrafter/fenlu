@@ -1,6 +1,6 @@
 use std::{path::PathBuf, sync::mpsc::{channel, Sender}};
 
-use eyre::Result;
+use eyre::{eyre, Result};
 use mlua::{ExternalResult, Lua, LuaSerdeExt, Value};
 use sqlx::{FromRow, SqliteConnection};
 use tokio::task;
@@ -24,11 +24,11 @@ fn create_source(path: PathBuf, tx: Sender<Metadata>) -> Result<()> {
             metadata.source = name.clone();
 
             if !metadata.uri.is_uri() {
-                Err("uri is invalid").into_lua_err()?;
+                eprintln!("source error: uri {} is invalid", metadata.uri);
+                return Ok(());
             }
 
             tx.send(metadata).expect("reciever should not drop");
-
             Ok(())
         })?,
     )?;

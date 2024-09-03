@@ -49,7 +49,13 @@ pub fn apply_transforms<'a>(
         Box::new(input) as Box<dyn Iterator<Item = Metadata> + 'a>,
         |acc, transform| {
             Box::new(acc.map(move |metadata| {
-                transform.apply(&metadata).expect("transform should succeed")
+                let applied = transform.apply(&metadata);
+                if let Err(error) = applied {
+                    eprintln!("transform error: {error}");
+                    return metadata;
+                }
+
+                applied.unwrap()
             }))
         },
     );
