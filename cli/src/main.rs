@@ -1,4 +1,3 @@
-pub mod metadata;
 pub mod scripts;
 pub mod args;
 

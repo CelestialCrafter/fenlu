@@ -5,7 +5,7 @@ use mlua::{Lua, LuaSerdeExt, Value};
 use sqlx::{FromRow, SqliteConnection};
 use tokio::task;
 
-use crate::metadata::Metadata;
+use fenlu_cli::metadata::Metadata;
 
 use super::fennel::compile_fennel;
 
