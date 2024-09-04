@@ -4,6 +4,7 @@
 (fn transform [exif]
   (let [handle (assert (io.popen (.. "realpath " (. exif 1)))) directory (handle:read)]
     {
+    "title" (. exif 2)
     "uri" (.. "file://" directory "/" (. exif 2))
     "mime" (. exif 5)
     "size" (. exif 6)

@@ -57,7 +57,7 @@ impl cxx_qt::Initialize for qobject::FenluMedia {
                 .into_os_string());
 
         let cmd = cmd
-            .args(["-m", "load"])
+            .args(["-m", "save"])
             .args(scripts)
             .stdout(Stdio::piped());
 

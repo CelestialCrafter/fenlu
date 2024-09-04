@@ -23,6 +23,7 @@
           lua-curl
           toml-edit
           exiftool
+          dkjson
         ];
       };
     };
