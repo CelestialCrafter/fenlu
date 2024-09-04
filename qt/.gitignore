@@ -1,0 +1,4 @@
+scripts/*.toml
+*.db
+*.db-journal
+fenlu-cli
