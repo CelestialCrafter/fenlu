@@ -39,7 +39,7 @@ impl qobject::FenluMedia {
     pub fn item(&self, index: usize) -> QUrl {
         match self.items.get(index as usize) {
             Some(url) => url.clone(),
-            None => QUrl::from("https://static-cdn.jtvnw.net/jtv_user_pictures/aacf30b5-349f-4246-a5a3-3d844bc3430b-profile_image-70x70.png")
+            None => QUrl::default()
         }
     }
 }
