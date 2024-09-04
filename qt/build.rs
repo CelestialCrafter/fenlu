@@ -6,7 +6,7 @@ fn main() {
         .qml_module(QmlModule {
             uri: "com.github.CelestialCrafter.fenlu",
             rust_files: &["src/objects/media.rs"],
-            qml_files: &["src/qml/media.qml", "src/qml/CustomScroll.qml"],
+            qml_files: &["src/qml/media.qml"],
             ..Default::default()
         })
         .build();
