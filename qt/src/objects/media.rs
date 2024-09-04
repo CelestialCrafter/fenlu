@@ -75,7 +75,6 @@ impl cxx_qt::Initialize for qobject::FenluMedia {
                         let amount = items.len();
                         media.as_mut().cxx_qt_ffi_rust_mut().items = items;
                         media.as_mut().set_total(amount);
-                        println!("ran queued item");
                     }).expect("should be able to queue update");
             };
 
@@ -84,6 +83,7 @@ impl cxx_qt::Initialize for qobject::FenluMedia {
                 let line = line.as_str();
                 let metadata: Metadata = serde_json::from_str(line).expect("media should parse into Metadata");
                 let url = QUrl::from(&metadata.uri.to_string());
+                println!("parsed metadata: {}", metadata.uri);
                 items.push(url);
 
                 // send items to qt every 500ms
