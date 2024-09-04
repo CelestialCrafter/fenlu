@@ -33,9 +33,10 @@ Window {
 
 
     CustomScrollGridView {
+        property var columns: 5
+
         anchors.fill: parent
         id: grid
-        property var columns: 5
 
         cellWidth: grid.width / columns
         cellHeight: grid.cellWidth

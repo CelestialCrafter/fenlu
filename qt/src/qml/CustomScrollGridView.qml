@@ -13,7 +13,6 @@ GridView {
 
     boundsBehavior: Flickable.StopAtBounds
     flickDeceleration: 5000
-    maximumFlickVelocity: 5000
 
     Behavior on contentY {
         NumberAnimation {
