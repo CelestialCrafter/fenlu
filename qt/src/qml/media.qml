@@ -41,7 +41,7 @@ Window {
         cellWidth: grid.width / columns
         cellHeight: grid.cellWidth
         model: mediaModel
-        cacheBuffer: grid.cellHeight * 10
+        cacheBuffer: grid.cellHeight * columns
 
         delegate: Image {
             required property url url
