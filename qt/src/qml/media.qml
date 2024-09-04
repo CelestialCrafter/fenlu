@@ -51,25 +51,25 @@ Window {
             source: url
         }
 
-        boundsBehavior: Flickable.StopAtBounds
-        flickDeceleration: 5000
-        maximumFlickVelocity: 5000
-
-        Behavior on contentY {
-            NumberAnimation {
-                duration: animDuration
-                easing.type: Easing.Linear
-            }
-        }
-
-        ScrollBar.vertical: ScrollBar {}
-
         property real accel: 0.7
         property real scrollMulti: 30
         property real animDuration: 20
         property real timerInterval: 15
         property real minVelocity: 0.1
         property real vy: 0
+
+        boundsBehavior: Flickable.StopAtBounds
+        flickDeceleration: 5000
+        maximumFlickVelocity: 5000
+
+        Behavior on contentY {
+            NumberAnimation {
+                duration: view.animDuration
+                easing.type: Easing.Linear
+            }
+        }
+
+        ScrollBar.vertical: ScrollBar {}
 
         Timer {
             id: scrollTimer
