@@ -6,7 +6,7 @@ fn main() {
         .qml_module(QmlModule {
             uri: "com.github.CelestialCrafter.fenlu",
             rust_files: &["src/objects/media.rs"],
-            qml_files: &["src/qml/media.qml"],
+            qml_files: &["src/qml/media.qml", "src/qml/CustomScrollGridView.qml"],
             ..Default::default()
         })
         .build();
