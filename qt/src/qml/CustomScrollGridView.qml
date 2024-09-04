@@ -46,7 +46,7 @@ GridView {
         anchors.fill: parent
         acceptedButtons: Qt.NoButton
 
-        onWheel: {
+        onWheel: function(wheel) {
             view.vy += wheel.angleDelta.y * view.scrollMulti;
             if (!scrollTimer.running) scrollTimer.start();
         }
