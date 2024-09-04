@@ -64,8 +64,39 @@ Window {
 
         ScrollBar.vertical: ScrollBar {}
 
-        CustomScroll {
-            target: view
+        property real accel: 0.7
+        property real scrollMulti: 30
+        property real animDuration: 20
+        property real timerInterval: 15
+        property real minVelocity: 0.1
+        property real vy: 0
+
+        Timer {
+            id: scrollTimer
+            interval: view.timerInterval
+            running: false
+            repeat: true
+            onTriggered: {
+                if (Math.abs(view.vy) > view.minVelocity) {
+                    var newY = view.contentY - view.vy * (scrollTimer.interval / 1000);
+                    // bounds checking
+                    view.contentY = Math.max(0, Math.min(newY, view.contentHeight - view.height));
+                    view.vy *= view.accel;
+                } else {
+                    view.vy = 0;
+                    scrollTimer.stop();
+                }
+            }
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.NoButton
+
+            onWheel: {
+                view.vy += wheel.angleDelta.y * view.scrollMulti;
+                if (!scrollTimer.running) scrollTimer.start();
+            }
         }
     }
 }
