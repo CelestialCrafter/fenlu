@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use eyre::Result;
 use mlua::{Function, Lua, LuaSerdeExt, RegistryKey, Value};
-use crate::metadata::Metadata;
+use fenlu_cli::metadata::Metadata;
 use super::fennel::compile_fennel;
 
 pub struct Transform {
