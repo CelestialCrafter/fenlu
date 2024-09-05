@@ -1,0 +1,2 @@
+generation_script="./fenlu-cli -m calculate scripts/proxy-transform.fnl scripts/pixiv-source.fnl"
+load_script="./fenlu-cli -m load scripts/*"

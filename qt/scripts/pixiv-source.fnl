@@ -10,7 +10,7 @@
                        {
                        "title" post.title
                        ; @NOTE uses a nginx proxy to set Referer for pximg
-                       "uri" (.. "http://localhost:7136/img-master/img/" date "/" post.id "_p0_master1200.jpg")
+                       "uri" (.. "http://i.pximg.net/img-master/img/" date "/" post.id "_p0_master1200.jpg")
                        "width" post.width
                        "height" post.height
                        "type" "Image"
@@ -39,4 +39,4 @@
       ; only images & undeleted works
       (if (and (= post.illustType 0) (not= post.updateDate "1970-01-01T00:00:00+09:00"))
           (add_uri (transform post))))))
-  (sleep config.request_delay)
+(sleep config.request_delay)
