@@ -25,9 +25,11 @@ pub mod qobject {
     impl cxx_qt::Constructor<()> for FenluMedia {}
 }
 
-use std::{fs, io::{BufRead, BufReader}, pin::Pin, process::{Command, Stdio}, thread, time::Instant};
+use std::{io::{BufRead, BufReader}, pin::Pin, process::{Command, Stdio}, thread, time::Instant};
 use fenlu_cli::metadata::Metadata;
 use cxx_qt_lib::QUrl;
+
+use crate::config::CONFIG;
 
 #[derive(Default)]
 pub struct Media {
@@ -46,21 +48,9 @@ impl qobject::FenluMedia {
 
 impl cxx_qt::Initialize for qobject::FenluMedia {
     fn initialize(self: Pin<&mut Self>) {
-        // spawn fenlu cli
         // @TODO make this not reliant on fenlu-cli, and able to use any command via options
-        let mut cmd = Command::new("./fenlu-cli");
-        let scripts = fs::read_dir("scripts")
-            .expect("script directory should be read").into_iter()
-            .map(|p| p
-                .expect("path should be read")
-                .path()
-                .into_os_string());
-
-        let cmd = cmd
-            .args(["-m", "save"])
-            .args(scripts)
-            .stdout(Stdio::piped());
-
+        let mut cmd = Command::new("sh");
+        let cmd = cmd.args(vec!["-c", &CONFIG.generation_script]).stdout(Stdio::piped());
         let mut child = cmd.spawn().expect("program should execute");
         let stdout = child.stdout.take().expect("could not take stdout");
 
@@ -83,6 +73,7 @@ impl cxx_qt::Initialize for qobject::FenluMedia {
                 let line = line.as_str();
                 let metadata: Metadata = serde_json::from_str(line).expect("media should parse into Metadata");
                 let url = QUrl::from(&metadata.uri.to_string());
+
                 println!("parsed metadata: {}", metadata.uri);
                 items.push(url);
 
