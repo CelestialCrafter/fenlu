@@ -8,7 +8,6 @@ use eyre::Result;
 use scripts::{filters::apply_filters, sources::{load_sources, create_sources}, transforms::apply_transforms};
 use sqlx::{Connection, SqliteConnection};
 use tokio::task;
-use tracing_subscriber::Registry;
 
 
 fn create_db_file() -> Result<()> {
@@ -39,7 +38,6 @@ async fn create_media_table(conn: &mut SqliteConnection) -> Result<()> {
 async fn main() {
     let args = parse_args().expect("parsing args should succeed");
     let subscriber = Registry::default();
-    tracing::subscriber::set_global_default(subscriber).unwrap();
 
     if let SourceMode::Save = args.source_mode {
         create_db_file().expect("db file creation should succeed");
