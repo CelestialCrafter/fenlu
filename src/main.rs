@@ -1,5 +1,7 @@
 pub mod objects;
 pub mod config;
+pub mod pipeline;
+pub mod metadata;
 
 use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QUrl};
 
@@ -8,7 +10,7 @@ fn main() {
     let mut engine = QQmlApplicationEngine::new();
 
     if let Some(engine) = engine.as_mut() {
-        engine.load(&QUrl::from("qrc:/qt/qml/io/github/CelestialCrafter/fenlu/src/qml/media.qml"));
+        engine.load(&QUrl::from("qrc:/qt/qml/com/github/CelestialCrafter/fenlu/src/qml/media.qml"));
     }
 
     if let Some(app) = app.as_mut() {

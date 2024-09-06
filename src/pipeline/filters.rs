@@ -1,8 +1,10 @@
-use std::path::PathBuf;
+use std::sync::mpsc::{channel, Receiver};
 
 use eyre::Result;
+use crate::metadata::Metadata;
+use glob::glob;
 use mlua::{Function, Lua, LuaSerdeExt, RegistryKey};
-use fenlu_cli::metadata::Metadata;
+
 use super::fennel::compile_fennel;
 
 pub struct Filter {
@@ -25,31 +27,29 @@ impl Filter {
     }
 }
 
-pub fn apply_filters<'a>(
-    paths: Vec<PathBuf>,
-    input: impl Iterator<Item = Metadata> + 'a
-) -> Result<impl Iterator<Item = Metadata> + 'a> {
-    let filters: Vec<Filter> = paths.into_iter()
+pub async fn apply_filters(
+    input: impl Iterator<Item = Metadata>
+) -> Result<Receiver<Metadata>> {
+    let (tx, rx) = channel();
+
+    let filters: Vec<Filter> = glob("scripts/*-filter.fnl")
+        .expect("glob should be valid")
+        .map(|path| path.expect("glob should not error"))
         .map(|path| {
             let (compiled, config) = compile_fennel(path.clone()).expect("fennel compilation should not fail");
             Filter::new(compiled, config)
         })
         .collect::<Result<Vec<Filter>>>()?;
 
-    let output = filters.into_iter().fold(
-        Box::new(input) as Box<dyn Iterator<Item = Metadata> + 'a>,
-        |acc, filter| {
-            Box::new(acc.filter(move |metadata| {
-                let applied = filter.apply(&metadata);
-                if let Err(error) = applied {
-                    eprintln!("filter error: {error}");
-                    return false;
-                }
+    for metadata in input {
+        for filter in &filters {
+            if !filter.apply(&metadata)? {
+                continue;
+            }
+        } 
 
-                applied.unwrap()
-            }))
-        },
-    );
+        tx.send(metadata)?;
+    }
 
-    Ok(output)
+    Ok(rx)
 }

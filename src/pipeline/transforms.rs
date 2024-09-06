@@ -1,7 +1,8 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::mpsc::{channel, Receiver}};
 use eyre::Result;
+use glob::glob;
 use mlua::{Function, Lua, LuaSerdeExt, RegistryKey, Value};
-use fenlu_cli::metadata::Metadata;
+use crate::metadata::Metadata;
 use super::fennel::compile_fennel;
 
 pub struct Transform {
@@ -26,11 +27,13 @@ impl Transform {
     }
 }
 
-pub fn apply_transforms<'a>(
-    paths: Vec<PathBuf>,
-    input: impl Iterator<Item = Metadata> + 'a
-) -> Result<impl Iterator<Item = Metadata> + 'a> {
-    let mut transforms: Vec<(PathBuf, Result<Transform>)> = paths.into_iter()
+pub async fn apply_transforms<'a>(
+    input: impl Iterator<Item = Metadata>
+) -> Result<Receiver<Metadata>> {
+    let (tx, rx) = channel();
+    let mut transforms: Vec<(PathBuf, Result<Transform>)> = glob("scripts/*-filter.fnl")
+        .expect("glob should be valid")
+        .map(|path| path.expect("glob should not error"))
         .map(|path| {
             let (compiled, config) = compile_fennel(path.clone()).expect("fennel compilation should not fail");
             let transform = Transform::new(&compiled, &config);
@@ -45,20 +48,14 @@ pub fn apply_transforms<'a>(
         .map(|(_, transform)| transform)
         .collect::<Result<Vec<Transform>>>()?;
     
-    let output = transforms.into_iter().fold(
-        Box::new(input) as Box<dyn Iterator<Item = Metadata> + 'a>,
-        |acc, transform| {
-            Box::new(acc.map(move |metadata| {
-                let applied = transform.apply(&metadata);
-                if let Err(error) = applied {
-                    eprintln!("transform error: {error}");
-                    return metadata;
-                }
+    for metadata in input {
+        let mut output = metadata;
+        for transform in &transforms {
+            output = transform.apply(&output)?;
+        } 
 
-                applied.unwrap()
-            }))
-        },
-    );
+        tx.send(output)?;
+    }
 
-    Ok(output)
+    Ok(rx)
 }
