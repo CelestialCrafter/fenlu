@@ -1,7 +1,7 @@
 import QtQuick 2.12
 import QtQuick.Window 2.12
 
-import com.github.CelestialCrafter.fenlu 1.0
+import com.github.celestialcrafter.fenlu 1.0
 
 Window {
     height: 480

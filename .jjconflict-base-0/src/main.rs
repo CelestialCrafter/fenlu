@@ -1,4 +1,4 @@
-pub mod objects;
+pub mod qt;
 pub mod config;
 pub mod pipeline;
 pub mod metadata;
@@ -10,7 +10,7 @@ fn main() {
     let mut engine = QQmlApplicationEngine::new();
 
     if let Some(engine) = engine.as_mut() {
-        engine.load(&QUrl::from("qrc:/qt/qml/com/github/CelestialCrafter/fenlu/src/qml/media.qml"));
+        engine.load(&QUrl::from("qrc:/qt/qml/com/github/celestialcrafter/fenlu/qml/main.qml"));
     }
 
     if let Some(app) = app.as_mut() {

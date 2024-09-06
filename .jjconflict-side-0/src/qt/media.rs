@@ -24,10 +24,10 @@ pub mod qobject {
     impl cxx_qt::Constructor<()> for FenluMedia {}
 }
 
-use std::{pin::Pin, time::Instant};
+use std::{pin::Pin, thread, time::Instant};
 use cxx_qt_lib::QUrl;
 use qobject::FenluMediaCxxQtThread;
-use tokio::task;
+use tokio::runtime::Runtime;
 
 use crate::pipeline::run_pipeline;
 
@@ -48,6 +48,7 @@ impl qobject::FenluMedia {
 
 fn render(thread: FenluMediaCxxQtThread, items: Vec<QUrl>) {
         thread.queue(move |mut media| {
+            println!("rendering media");
             let amount = items.len();
             media.as_mut().cxx_qt_ffi_rust_mut().items = items;
             media.as_mut().set_total(amount);
@@ -58,10 +59,10 @@ async fn handle_media(thread: FenluMediaCxxQtThread) {
     let mut items = vec![];
     let mut last_update = Instant::now();
 
-    for metadata in run_pipeline(false, true).await.expect("pipeline should succeed").into_iter(){
-        let url = QUrl::from(&metadata.uri.to_string());
+    for media in run_pipeline(false, false).await.expect("pipeline should succeed").into_iter(){
+        println!("media recieved: {:?}", media.uri.to_string());
+        let url = QUrl::from(&media.uri.to_string());
 
-        println!("parsed metadata: {}", metadata.uri);
         items.push(url);
 
         // send items to qt every 500ms
@@ -78,7 +79,10 @@ impl cxx_qt::Initialize for qobject::FenluMedia {
     fn initialize(self: Pin<&mut Self>) {
         // read items from stdin and send them to qt
         let thread = self.cxx_qt_ffi_qt_thread();
-        task::spawn(handle_media(thread));
+        thread::spawn(move || {
+            let rt = Runtime::new().expect("runtime should be created");
+            rt.block_on(handle_media(thread));
+        });
     }
 }
 

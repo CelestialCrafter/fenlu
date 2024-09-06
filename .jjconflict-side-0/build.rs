@@ -4,10 +4,11 @@ fn main() {
     CxxQtBuilder::new()
         .qt_module("Network")
         .qml_module(QmlModule {
-            uri: "com.github.CelestialCrafter.fenlu",
-            rust_files: &["src/objects/media.rs"],
-            qml_files: &["src/qml/media.qml", "src/qml/CustomScrollGridView.qml"],
+            uri: "com.github.celestialcrafter.fenlu",
+            rust_files: &["src/qt/media.rs"],
+            qml_files: &["qml/main.qml", "qml/CustomScrollGridView.qml"],
             ..Default::default()
         })
         .build();
 }
+

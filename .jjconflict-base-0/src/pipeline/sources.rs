@@ -1,6 +1,7 @@
 use std::{path::PathBuf, sync::mpsc::{channel, Receiver, Sender}};
 
 use eyre::Result;
+use futures::future::try_join_all;
 use glob::glob;
 use mlua::{Lua, LuaSerdeExt, Value};
 use sqlx::{FromRow, SqliteConnection};
@@ -19,17 +20,17 @@ fn create_source(path: PathBuf, tx: Sender<Metadata>) -> Result<()> {
 
     globals.set(
         "add_uri",
-        lua.create_function(move |lua, metadata: Value| {
+        lua.create_function(move |lua, media: Value| {
             let tx = tx.clone();
-            let mut metadata: Metadata = lua.from_value(metadata)?;
-            metadata.source = name.clone();
+            let mut media: Metadata = lua.from_value(media)?;
+            media.source = name.clone();
 
-            if !metadata.uri.is_uri() {
-                eprintln!("source error: uri {} is invalid", metadata.uri);
+            if !media.uri.is_uri() {
+                eprintln!("source error: uri {} is invalid", media.uri);
                 return Ok(());
             }
 
-            tx.send(metadata).expect("reciever should not drop");
+            tx.send(media).expect("reciever should not drop");
 
             Ok(())
         })?,
@@ -51,8 +52,8 @@ pub async fn load_sources(conn: &mut SqliteConnection) -> Result<Receiver<Metada
     let (tx, rx) = channel();
 
     for row in sqlx::query_as::<_, MetadataRowString>("SELECT metadata FROM media").fetch_all(conn).await?.into_iter() {
-        let metadata = serde_json::from_str(row.metadata.as_str()).expect("metadata column should decode to Metadata");
-        tx.send(metadata).expect("reciever should not be dropped");
+        let media = serde_json::from_str(row.metadata.as_str()).expect("metadata column should decode to Metadata");
+        tx.send(media).expect("reciever should not be dropped");
     }
 
     Ok(rx)
@@ -70,12 +71,7 @@ pub async fn create_sources() -> Result<Receiver<Metadata>> {
     }
 
     task::spawn(async {
-        for handle in handles {
-            handle
-                .await
-                .expect("handle should not error")
-                .expect("source should not error");
-            }
+        try_join_all(handles).await.expect("source should not error");
     });
 
     Ok(rx)
