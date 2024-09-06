@@ -1,11 +1,12 @@
-use std::{path::PathBuf, sync::mpsc::{channel, Sender}};
+use std::{path::PathBuf, sync::mpsc::{channel, Receiver, Sender}};
 
 use eyre::Result;
+use glob::glob;
 use mlua::{Lua, LuaSerdeExt, Value};
 use sqlx::{FromRow, SqliteConnection};
 use tokio::task;
 
-use fenlu_cli::metadata::Metadata;
+use crate::metadata::Metadata;
 
 use super::fennel::compile_fennel;
 
@@ -29,6 +30,7 @@ fn create_source(path: PathBuf, tx: Sender<Metadata>) -> Result<()> {
             }
 
             tx.send(metadata).expect("reciever should not drop");
+
             Ok(())
         })?,
     )?;
@@ -43,25 +45,24 @@ struct MetadataRowString {
     metadata: String
 }
 
-pub async fn load_sources(conn: &mut SqliteConnection, paths: Vec<PathBuf>) -> Result<Box<dyn Iterator<Item = Metadata>>> {
+pub async fn load_sources(conn: &mut SqliteConnection) -> Result<Receiver<Metadata>> {
     // @TODO load only sources provided by paths arg
     //let sources = paths.into_iter().map(|path| path.file_name().unwrap().to_os_string().into_string().expect("path should be utf-8"));
-    _ = paths;
+    let (tx, rx) = channel();
 
-    Ok(Box::new(sqlx::query_as::<_, MetadataRowString>("SELECT metadata FROM media")
-        .fetch_all(conn)
-        .await?
-        .into_iter()
-        .map(|m| -> Metadata {
-            serde_json::from_str(m.metadata.as_str()).expect("metadata column should decode to Metadata")
-        })))
+    for row in sqlx::query_as::<_, MetadataRowString>("SELECT metadata FROM media").fetch_all(conn).await?.into_iter() {
+        let metadata = serde_json::from_str(row.metadata.as_str()).expect("metadata column should decode to Metadata");
+        tx.send(metadata).expect("reciever should not be dropped");
+    }
+
+    Ok(rx)
 }
 
-pub async fn create_sources(paths: Vec<PathBuf>) -> Result<Box<dyn Iterator<Item = Metadata>>> {
+pub async fn create_sources() -> Result<Receiver<Metadata>> {
     let (tx, rx) = channel();
     let mut handles = vec![];
 
-    for path in paths {
+    for path in glob("scripts/*-source.fnl").expect("glob should be valid").map(|p| p.expect("fennel compilation should not fail")) {
         let tx = tx.clone();
         handles.push(task::spawn(async move {
             create_source(path, tx)
@@ -77,5 +78,5 @@ pub async fn create_sources(paths: Vec<PathBuf>) -> Result<Box<dyn Iterator<Item
             }
     });
 
-    Ok(Box::new(rx.into_iter()))
+    Ok(rx)
 }
