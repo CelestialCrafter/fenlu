@@ -11,7 +11,7 @@ use filters::apply_filters;
 use sources::{load_sources, create_sources};
 use transforms::apply_transforms;
 use sqlx::{Connection, SqliteConnection};
-use tokio::task;
+use tokio::task::{self};
 
 
 fn create_db_file() -> Result<()> {
@@ -54,33 +54,39 @@ pub async fn run_pipeline(save: bool, load: bool) -> Result<Receiver<Metadata>> 
     } else {
         create_sources().await?
     };
-    let transformed = apply_transforms(source.into_iter()).await?;
-    let filtered = apply_filters(transformed.into_iter()).await?;
+    let transformed = apply_transforms(source).await?;
+    let filtered = apply_filters(transformed).await?;
 
     let (tx, rx) = channel();
-    let handle: task::JoinHandle<std::result::Result<(), Error>> = task::spawn(async move {
+
+    let handle = task::spawn(async move {
         let conn = &mut if save || load {
             Some(SqliteConnection::connect("fenlu.db").await?)
         } else {
             None
         };
 
-        for metadata in filtered.into_iter() {
+        for media in filtered.into_iter() {
             if save {
                 sqlx::query("INSERT OR IGNORE INTO media (uri, metadata) VALUES ($1, $2)")
-                    .bind(metadata.uri.to_string())
-                    .bind(serde_json::to_string(&metadata)?)
+                    .bind(media.uri.to_string())
+                    .bind(serde_json::to_string(&media)?)
                     .execute(conn.as_mut().unwrap())
                     .await?;
             }
 
-            tx.send(metadata)?;
+            tx.send(media)?;
         }
 
-        Ok(())
+        Ok::<_, Error>(())
     });
 
-    handle.await??;
+    task::spawn(async {
+        handle
+            .await
+            .expect("handle should not error")
+            .expect("transform should not error");
+    });
 
     Ok(rx)
 }
