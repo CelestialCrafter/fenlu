@@ -7,18 +7,6 @@ const CONFIG_PATH: &str = "config.toml";
 
 #[derive(Deserialize)]
 pub struct Config {
-    #[serde(default = "default_generation_script")]
-    pub generation_script: String,
-    #[serde(default = "default_load_script")]
-    pub load_script: String
-}
-
-fn default_generation_script() -> String {
-    "fenlu-cli -m save scripts/*".to_string()
-}
-
-fn default_load_script() -> String {
-    "fenlu-cli -m load scripts/*".to_string()
 }
 
 pub static CONFIG: Lazy<Config> = Lazy::new(|| {
