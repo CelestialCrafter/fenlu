@@ -60,6 +60,7 @@ async fn handle_media(thread: FenluMediaCxxQtThread) {
     let mut last_update = Instant::now();
 
     for metadata in run_pipeline(false, false).await.expect("pipeline should succeed").into_iter(){
+        println!("media recieved: {:?}", metadata.uri.to_string());
         let url = QUrl::from(&metadata.uri.to_string());
 
         items.push(url);
