@@ -1,4 +1,4 @@
-#[cxx_qt::bridge]
+#[cxx_qt::bridge(cxx_file_stem = "media")]
 pub mod qobject {
     unsafe extern "C++" {
         include!("cxx-qt-lib/qstring.h");
@@ -59,9 +59,8 @@ async fn handle_media(thread: FenluMediaCxxQtThread) {
     let mut items = vec![];
     let mut last_update = Instant::now();
 
-    for media in run_pipeline(false, false).await.expect("pipeline should succeed").into_iter(){
-        println!("media recieved: {:?}", media.uri.to_string());
-        let url = QUrl::from(&media.uri.to_string());
+    for metadata in run_pipeline(false, false).await.expect("pipeline should succeed").into_iter(){
+        let url = QUrl::from(&metadata.uri.to_string());
 
         items.push(url);
 
