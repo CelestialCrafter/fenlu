@@ -1,7 +1,8 @@
 import QtQuick 2.12
 import QtQuick.Window 2.12
+import QtQuick.Controls 2.12
 
-import com.github.celestialcrafter.fenlu 1.0
+import fenlu 1.0
 
 Window {
     height: 480
@@ -14,35 +15,34 @@ Window {
         id: media
     }
 
-    ListModel {
-        id: mediaModel
-    }
-
     Connections {
         target: media
         property var previousTotal: 0
-
+    
         function onTotalChanged() {
             for (let i = previousTotal; i < media.total; i++) {
                 mediaModel.append({ url: media.item(i) });
             }
-
+    
             previousTotal = media.total;
         }
     }
 
+    ListModel {
+        id: mediaModel
+    }
 
     CustomScrollGridView {
         property var columns: 5
-
+    
         anchors.fill: parent
         id: grid
-
+    
         cellWidth: grid.width / columns
         cellHeight: grid.cellWidth
         model: mediaModel
         cacheBuffer: grid.cellHeight * columns
-
+    
         delegate: Image {
             required property url url
             width: grid.cellWidth
