@@ -12,7 +12,7 @@ use crate::metadata::Metadata;
 use super::fennel::compile_fennel;
 
 fn create_source(path: PathBuf, tx: Sender<Metadata>) -> Result<()> {
-    let (compiled, config) = compile_fennel(path.clone()).expect("fennel compilation should not fail");
+    let (compiled, config) = compile_fennel(path.clone());
     let name = path.file_name().unwrap().to_os_string().into_string().expect("path should be utf-8");
 
     let lua = unsafe { Lua::unsafe_new() };
@@ -63,7 +63,7 @@ pub async fn create_sources() -> Result<Receiver<Metadata>> {
     let (tx, rx) = channel();
     let mut handles = vec![];
 
-    for path in glob("scripts/*-source.fnl").expect("glob should be valid").map(|p| p.expect("fennel compilation should not fail")) {
+    for path in glob("scripts/*-source.fnl").expect("glob should be valid").map(|p| p.expect("path should not error")) {
         let tx = tx.clone();
         handles.push(task::spawn(async move {
             create_source(path, tx)

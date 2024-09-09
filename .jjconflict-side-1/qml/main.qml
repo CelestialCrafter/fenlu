@@ -1,7 +1,4 @@
-import QtQuick 2.12
 import QtQuick.Window 2.12
-import QtQuick.Controls 2.12
-
 import fenlu 1.0
 
 Window {
@@ -12,45 +9,19 @@ Window {
     id: window
 
     FenluMedia {
-        id: media
+        id: fenluMedia
     }
 
-    Connections {
-        target: media
-        property var previousTotal: 0
-    
-        function onTotalChanged() {
-            for (let i = previousTotal; i < media.total; i++) {
-                mediaModel.append({ url: media.item(i) });
-            }
-    
-            previousTotal = media.total;
-        }
+    Queries {
+        id: queries
+        height: parent.height * 0.3
+        anchors.top: parent.top
+        media: fenluMedia
     }
-
-    ListModel {
-        id: mediaModel
-    }
-
-    CustomScrollGridView {
-        property var columns: 5
-    
-        anchors.fill: parent
-        id: grid
-    
-        cellWidth: grid.width / columns
-        cellHeight: grid.cellWidth
-        model: mediaModel
-        cacheBuffer: grid.cellHeight * columns
-    
-        delegate: Image {
-            required property url url
-            width: grid.cellWidth
-            height: grid.cellHeight
-            asynchronous: true
-            cache: false
-            fillMode: Image.PreserveAspectCrop
-            source: url
-        }
+    Media {
+        height: parent.height * 0.7
+        width: parent.width
+        anchors.top: queries.bottom
+        media: fenluMedia
     }
 }

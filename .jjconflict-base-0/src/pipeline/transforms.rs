@@ -38,7 +38,7 @@ pub async fn apply_transforms<'a>(
             .expect("glob should be valid")                                                                            
             .map(|path| path.expect("glob should not error"))
             .map(|path| {
-                let (compiled, config) = compile_fennel(path.clone()).expect("fennel compilation should not fail");
+                let (compiled, config) = compile_fennel(path.clone());
                 let transform = Transform::new(&compiled, &config);
                 (path, transform)
             })

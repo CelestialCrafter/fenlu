@@ -24,17 +24,18 @@ pub mod qobject {
     impl cxx_qt::Constructor<()> for FenluMedia {}
 }
 
-use std::{pin::Pin, thread, time::Instant};
+use std::{collections::HashMap, pin::Pin, thread, time::Instant};
 use cxx_qt_lib::QUrl;
 use qobject::FenluMediaCxxQtThread;
 use tokio::runtime::Runtime;
 
-use crate::pipeline::run_pipeline;
+use crate::pipeline::{run_pipeline, PipelineOpts};
 
 #[derive(Default)]
 pub struct Media {
     total: usize,
     items: Vec<QUrl>,
+    queries: HashMap<String, String>
 }
 
 impl qobject::FenluMedia {
@@ -55,13 +56,20 @@ fn render(thread: FenluMediaCxxQtThread, items: Vec<QUrl>) {
         }).expect("should be able to queue update");
 }
 
-async fn handle_media(thread: FenluMediaCxxQtThread) {
+async fn handle_media(thread: FenluMediaCxxQtThread, queries: HashMap<String, String>) {
     let mut items = vec![];
     let mut last_update = Instant::now();
 
-    for metadata in run_pipeline(false, false).await.expect("pipeline should succeed").into_iter(){
-        println!("media recieved: {:?}", metadata.uri.to_string());
-        let url = QUrl::from(&metadata.uri.to_string());
+    for media in run_pipeline(PipelineOpts {
+        save: false,
+        load: true,
+        queries
+    })
+    .await
+    .expect("pipeline should succeed")
+    .into_iter() {
+        println!("media recieved: {:?}", media.uri.to_string());
+        let url = QUrl::from(&media.uri.to_string());
 
         items.push(url);
 
@@ -77,11 +85,12 @@ async fn handle_media(thread: FenluMediaCxxQtThread) {
 
 impl cxx_qt::Initialize for qobject::FenluMedia {
     fn initialize(self: Pin<&mut Self>) {
-        // read items from stdin and send them to qt
-        let thread = self.cxx_qt_ffi_qt_thread();
+        let qthread = self.cxx_qt_ffi_qt_thread();
+        let queries = self.queries.clone();
+
         thread::spawn(move || {
             let rt = Runtime::new().expect("runtime should be created");
-            rt.block_on(handle_media(thread));
+            rt.block_on(handle_media(qthread, queries));
         });
     }
 }

@@ -16,14 +16,15 @@ pub fn load_config(script_path: PathBuf) -> Result<String> {
     Ok(fs::read_to_string(config_path).unwrap_or("".to_string()))
 }
 
-pub fn compile_fennel(path: PathBuf) -> Result<(String, String)> {
+pub fn compile_fennel(path: PathBuf) -> (String, String) {
     let output = Command::new("fennel")
         .arg("-c")
         .arg(path.clone())
-        .output()?;
-    let compiled = String::from_utf8(output.stdout)?;
+        .output()
+        .expect("compilation should succeed");
+    let compiled = String::from_utf8(output.stdout).expect("path should be utf-8");
 
-    let config = load_config(path)?;
+    let config = load_config(path).expect("config should load");
 
     Ok((compiled, config))
 }
