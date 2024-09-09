@@ -36,7 +36,7 @@ pub async fn apply_transforms<'a>(
     let handle = task::spawn(async move {
         let mut transforms: Vec<(PathBuf, Result<Transform>)> = glob("scripts/*-transform.fnl")
             .expect("glob should be valid")                                                                            
-            .map(|path| path.expect("glob should not error"))
+            .map(|path| path.expect("path read should succeed"))
             .map(|path| {
                 let (compiled, config) = compile_fennel(path.clone());
                 let transform = Transform::new(&compiled, &config);
@@ -66,8 +66,8 @@ pub async fn apply_transforms<'a>(
     task::spawn(async {
         handle
             .await
-            .expect("handle should not error")
-            .expect("transform should not error");
+            .expect("handle should succeed")
+            .expect("transform should succeed");
     });
 
     Ok(rx)

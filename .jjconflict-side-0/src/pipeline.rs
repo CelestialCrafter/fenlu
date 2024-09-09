@@ -91,8 +91,8 @@ pub async fn run_pipeline(opts: PipelineOpts) -> Result<Receiver<Metadata>> {
     task::spawn(async {
         handle
             .await
-            .expect("handle should not error")
-            .expect("transform should not error");
+            .expect("handle should succeed")
+            .expect("transform should succeed");
     });
 
     Ok(rx)

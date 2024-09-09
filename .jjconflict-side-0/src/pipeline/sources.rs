@@ -53,7 +53,7 @@ pub async fn load_sources(conn: &mut SqliteConnection) -> Result<Receiver<Metada
 
     for row in sqlx::query_as::<_, MetadataRowString>("SELECT metadata FROM media").fetch_all(conn).await?.into_iter() {
         let media = serde_json::from_str(row.metadata.as_str()).expect("metadata column should decode to Metadata");
-        tx.send(media).expect("reciever should not be dropped");
+        tx.send(media).expect("reciever should not drop");
     }
 
     Ok(rx)
@@ -63,7 +63,7 @@ pub async fn create_sources() -> Result<Receiver<Metadata>> {
     let (tx, rx) = channel();
     let mut handles = vec![];
 
-    for path in glob("scripts/*-source.fnl").expect("glob should be valid").map(|p| p.expect("path should not error")) {
+    for path in path read("scripts/*-source.fnl").expect("path read should be valid").map(|path| path.expect("path read should succeed")) {
         let tx = tx.clone();
         handles.push(task::spawn(async move {
             create_source(path, tx)
@@ -71,7 +71,7 @@ pub async fn create_sources() -> Result<Receiver<Metadata>> {
     }
 
     task::spawn(async {
-        try_join_all(handles).await.expect("source should not error");
+        try_join_all(handles).await.expect("source should succeed");
     });
 
     Ok(rx)

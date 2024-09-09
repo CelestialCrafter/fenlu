@@ -38,7 +38,7 @@ pub async fn apply_filters(
     let handle = task::spawn(async move {
         let filters: Vec<Filter> = glob("scripts/*-filter.fnl")
             .expect("glob should be valid")
-            .map(|path| path.expect("glob should not error"))
+            .map(|path| path.expect("path read should succeed"))
             .map(|path| {
                 let (compiled, mut config) = compile_fennel(path.clone());
                 let name = path.file_name().unwrap().to_os_string().into_string().map_err(|_| eyre!("path is not utf-8"))?;
@@ -73,8 +73,8 @@ pub async fn apply_filters(
     task::spawn(async {
         handle
             .await
-            .expect("handle should not error")
-            .expect("transform should not error");
+            .expect("handle should succeed")
+            .expect("transform should succeed");
     });
 
     Ok(rx)
