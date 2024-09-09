@@ -3,7 +3,7 @@ pub mod filters;
 pub mod sources;
 pub mod transforms;
 
-use std::{fs::File, io::ErrorKind, sync::mpsc::{channel, Receiver}};
+use std::{collections::HashMap, fs::File, io::ErrorKind, sync::mpsc::{channel, Receiver}};
 
 use eyre::{Error, Result};
 use crate::metadata::Metadata;
@@ -38,8 +38,15 @@ async fn create_media_table(conn: &mut SqliteConnection) -> Result<()> {
     Ok(())
 }
 
-pub async fn run_pipeline(save: bool, load: bool) -> Result<Receiver<Metadata>> {
-    let conn = &mut if save || load {
+#[derive(Default)]
+pub struct PipelineOpts {
+    pub save: bool,
+    pub load: bool,
+    pub queries: HashMap<String, String>
+}
+
+pub async fn run_pipeline(opts: PipelineOpts) -> Result<Receiver<Metadata>> {
+    let conn = &mut if opts.save || opts.load {
         let mut conn = SqliteConnection::connect("fenlu.db").await?;
         create_db_file()?;
         create_media_table(&mut conn).await?;
@@ -49,25 +56,25 @@ pub async fn run_pipeline(save: bool, load: bool) -> Result<Receiver<Metadata>> 
         None
     };
 
-    let source = if load {
+    let source = if opts.load {
         load_sources(conn.as_mut().unwrap()).await?
     } else {
         create_sources().await?
     };
     let transformed = apply_transforms(source).await?;
-    let filtered = apply_filters(transformed).await?;
+    let filtered = apply_filters(transformed, opts.queries).await?;
 
     let (tx, rx) = channel();
 
     let handle = task::spawn(async move {
-        let conn = &mut if save || load {
+        let conn = &mut if opts.save || opts.load {
             Some(SqliteConnection::connect("fenlu.db").await?)
         } else {
             None
         };
 
         for media in filtered.into_iter() {
-            if save {
+            if opts.save {
                 sqlx::query("INSERT OR IGNORE INTO media (uri, metadata) VALUES ($1, $2)")
                     .bind(media.uri.to_string())
                     .bind(serde_json::to_string(&media)?)
