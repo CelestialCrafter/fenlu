@@ -6,6 +6,11 @@ import fenlu 1.0
 Item {
     required property FenluMedia media
 
+    function runPipeline() {
+        mediaModel.clear();
+        media.runPipeline();
+    }
+
     FenluScripts {
         id: scripts
     }
@@ -18,7 +23,7 @@ Item {
             model: scripts.filtersTotal
             Item {
                 width: parent.width
-                height: 10
+                height: 15
                 property string script: scripts.getFilter(index)
                 Text {
                     id: label
@@ -31,6 +36,7 @@ Item {
                     width: parent.width * 0.6
 
                     onTextEdited: media.setQuery(script, input.text);
+                    onAccepted: runPipeline()
                 }
             }
         }
@@ -38,10 +44,8 @@ Item {
 
     Button {
         anchors.right: parent.right
+        id: rerun
         text: "Re-Run Pipeline"
-        onClicked: {
-            mediaModel.clear();
-            media.runPipeline();
-        }
+        onClicked: runPipeline()
     }
 }

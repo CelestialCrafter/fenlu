@@ -1,5 +1,6 @@
 import QtQuick.Window 2.12
-import QtQuick.Layouts
+import QtQuick.Layouts 2.12
+import QtQuick.Controls 2.12
 import fenlu 1.0
 
 Window {
@@ -19,9 +20,10 @@ Window {
 
     ColumnLayout {
         anchors.fill: parent
+
         Queries {
             id: queries
-            Layout.preferredHeight: parent.height * 0.2
+            Layout.preferredHeight: parent.height * 0.1
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignTop
             media: fenluMedia

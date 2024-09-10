@@ -9,7 +9,6 @@
 (fn transform [post] (let [date (: (: (: (post.updateDate:gsub "-" "/") :gsub "T" "/") :gsub ":" "/") :gsub "%+.+" "")]
                        {
                        "title" post.title
-                       ; @NOTE uses a nginx proxy to set Referer for pximg
                        "uri" (.. "http://i.pximg.net/img-master/img/" date "/" post.id "_p0_master1200.jpg")
                        "width" post.width
                        "height" post.height
@@ -23,7 +22,7 @@
     (with-open [h (curl.easy {
                              :url url
                              :httpheader ["User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:102.0) Gecko/20100101 Firefox/103.0"
-                                          (.. "Cookie: PHPSESSID=" config.account.user_id "_" config.account.pixiv_token)]
+                                          (.. "Cookie: PHPSESSID=" config.account.user_id "_" config.account.token)]
                              :writefunction {:write #(table.insert out $2)}
                              })]
       (h:perform))
