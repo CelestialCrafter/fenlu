@@ -10,7 +10,7 @@
           "<=" (<= lhs rhs)
           ">" (> lhs rhs)
           "<" (< lhs rhs)
-          "!=" (not= lhs rhs)
+          "!" (not= lhs rhs)
           "=" (= lhs rhs)
           _ default))))
 
