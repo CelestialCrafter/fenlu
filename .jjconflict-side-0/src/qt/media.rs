@@ -19,6 +19,8 @@ pub mod qobject {
         #[qinvokable]
         fn item(self: &FenluMedia, index: usize) -> QUrl;
         #[qinvokable]
+        fn open(self: &FenluMedia, url: QUrl);
+        #[qinvokable]
         fn set_query(self: Pin<&mut FenluMedia>, key: QString, query: QString);
         #[qinvokable]
         fn run_pipeline(self: Pin<&mut FenluMedia>);
@@ -48,6 +50,10 @@ impl qobject::FenluMedia {
             Some(url) => url.clone(),
             None => QUrl::default()
         }
+    }
+
+    pub fn open(&self, url: QUrl) {
+        open::that_detached(url.to_string()).expect("media should open");
     }
 
     pub fn set_query(self: Pin<&mut Self>, key: QString, query: QString) {

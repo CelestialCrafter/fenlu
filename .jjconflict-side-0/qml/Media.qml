@@ -37,6 +37,11 @@ Item {
             cache: false
             fillMode: Image.PreserveAspectCrop
             source: url
+
+            MouseArea {
+                anchors.fill: parent
+                onClicked: media.open(url);
+            }
         }
     }
 }
