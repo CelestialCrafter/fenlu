@@ -5,44 +5,43 @@ import fenlu 1.0
 
 Item {
     required property FenluMedia media
-    width: parent.width
 
     FenluScripts {
         id: scripts
     }
 
     Column {
-        width: parent.width
+        id: column
+        anchors.fill: parent
+
         Repeater {
             model: scripts.filtersTotal
             Item {
                 width: parent.width
+                height: 10
                 property string script: scripts.getFilter(index)
-
                 Text {
-                    anchors.left: parent.left
                     id: label
                     text: script + ": "
                 }
 
                 TextInput {
-                    anchors.left: label.right
-                    text: ""
-                    width: parent.width * 0.2
                     id: input
+                    anchors.left: label.right
+                    width: parent.width * 0.6
 
                     onTextEdited: media.setQuery(script, input.text);
                 }
-
-                Button {
-                    anchors.left:input.right
-                    text: "Re-Run Pipeline"
-                    onClicked: {
-                        mediaModel.clear();
-                        media.runPipeline();
-                    }
-                }
             }
+        }
+    }
+
+    Button {
+        anchors.right: parent.right
+        text: "Re-Run Pipeline"
+        onClicked: {
+            mediaModel.clear();
+            media.runPipeline();
         }
     }
 }

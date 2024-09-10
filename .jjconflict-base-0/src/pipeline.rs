@@ -46,7 +46,6 @@ pub struct PipelineOpts {
 }
 
 pub async fn run_pipeline(opts: PipelineOpts) -> Result<Receiver<Metadata>> {
-    println!("{:?}", opts.queries);
     let conn = &mut if opts.save || opts.load {
         let mut conn = SqliteConnection::connect("fenlu.db").await?;
         create_db_file()?;
