@@ -7,6 +7,12 @@ const CONFIG_PATH: &str = "config.toml";
 
 #[derive(Deserialize)]
 pub struct Config {
+    #[serde(default = "default_media_update_interval")]
+    pub media_update_interval: u128
+}
+
+fn default_media_update_interval() -> u128 {
+    250
 }
 
 pub static CONFIG: Lazy<Config> = Lazy::new(|| {

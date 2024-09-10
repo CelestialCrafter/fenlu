@@ -26,5 +26,5 @@ pub fn compile_fennel(path: PathBuf) -> (String, String) {
 
     let config = load_config(path).expect("config should load");
 
-    Ok((compiled, config))
+    (compiled, config)
 }

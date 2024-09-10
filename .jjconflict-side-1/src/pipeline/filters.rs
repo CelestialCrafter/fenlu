@@ -43,15 +43,15 @@ pub async fn apply_filters(
                 let (compiled, mut config) = compile_fennel(path.clone());
                 let name = path.file_name().unwrap().to_os_string().into_string().map_err(|_| eyre!("path is not utf-8"))?;
 
-                if let Some(query) = queries.get(name.as_str()) {
-                    let mut table: Table = toml::from_str(config.as_str())?;
-                    table.entry("query").or_insert(Value::String(query.to_string()));
-                    config = toml::to_string(&table)?;
-                }
+                let default = String::default();
+                let query = queries.get(name.as_str()).unwrap_or(&default);
+                let mut table: Table = toml::from_str(config.as_str())?;
+                table.entry("query").or_insert(Value::String(query.to_string()));
+                config = toml::to_string(&table)?;
 
                 Filter::new(compiled, config)
             })
-            .collect::<Result<_, Error>>()?;
+        .collect::<Result<_, Error>>()?;
 
         for media in input {
             let mut include = true;
@@ -75,7 +75,7 @@ pub async fn apply_filters(
             .await
             .expect("handle should succeed")
             .expect("transform should succeed");
-    });
+        });
 
     Ok(rx)
 }

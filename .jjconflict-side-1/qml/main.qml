@@ -1,4 +1,5 @@
 import QtQuick.Window 2.12
+import QtQuick.Layouts
 import fenlu 1.0
 
 Window {
@@ -12,16 +13,25 @@ Window {
         id: fenluMedia
     }
 
-    Queries {
-        id: queries
-        height: parent.height * 0.3
-        anchors.top: parent.top
-        media: fenluMedia
+    ListModel {
+        id: mediaModel
     }
-    Media {
-        height: parent.height * 0.7
-        width: parent.width
-        anchors.top: queries.bottom
-        media: fenluMedia
+
+    ColumnLayout {
+        anchors.fill: parent
+        Queries {
+            id: queries
+            Layout.preferredHeight: parent.height * 0.2
+            Layout.fillWidth: true
+            Layout.alignment: Qt.AlignTop
+            media: fenluMedia
+        }
+
+        Media {
+            Layout.fillHeight: true
+            Layout.fillWidth: true
+            Layout.alignment: Qt.AlignBottom
+            media: fenluMedia
+        }
     }
 }

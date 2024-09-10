@@ -25,6 +25,6 @@
                     (if (= lhs "w") media.width media.height)
                     (tonumber rhs)
                     op))]
-        (accumulate [acc true i n (ipairs ops)]
+        (accumulate [acc true _ n (ipairs ops)]
           (and acc n)))))
 
