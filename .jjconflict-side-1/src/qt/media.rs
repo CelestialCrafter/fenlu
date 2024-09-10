@@ -86,7 +86,7 @@ async fn handle_media(thread: FenluMediaCxxQtThread, queries: HashMap<String, St
 
     for media in run_pipeline(PipelineOpts {
         save: false,
-        load: true,
+        load: false,
         queries
     })
     .await

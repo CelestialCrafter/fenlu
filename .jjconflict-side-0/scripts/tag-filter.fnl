@@ -1,5 +1,4 @@
 (local toml_edit (require :toml_edit))
-(local fennel (require :fennel))
 (local config (toml_edit.parse ...))
 
 (fn has-tag [tags desired]

@@ -31,13 +31,12 @@ Item {
 
         delegate: Image {
             required property url url
+
             width: grid.cellWidth
             height: grid.cellHeight
             asynchronous: true
-            cache: false
             fillMode: Image.PreserveAspectCrop
             source: url
-
             MouseArea {
                 anchors.fill: parent
                 onClicked: media.open(url);
