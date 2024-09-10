@@ -18,6 +18,10 @@ pub mod qobject {
     unsafe extern "RustQt" {
         #[qinvokable]
         fn item(self: &FenluMedia, index: usize) -> QUrl;
+        #[qinvokable]
+        fn set_query(self: Pin<&mut FenluMedia>, key: QString, query: QString);
+        #[qinvokable]
+        fn run_pipeline(self: Pin<&mut FenluMedia>);
     }
 
     impl cxx_qt::Threading for FenluMedia {}
@@ -25,11 +29,11 @@ pub mod qobject {
 }
 
 use std::{collections::HashMap, pin::Pin, thread, time::Instant};
-use cxx_qt_lib::QUrl;
-use qobject::FenluMediaCxxQtThread;
+use cxx_qt_lib::{QString, QUrl};
+use qobject::{FenluMedia, FenluMediaCxxQtThread};
 use tokio::runtime::Runtime;
 
-use crate::pipeline::{run_pipeline, PipelineOpts};
+use crate::{config::CONFIG, pipeline::{run_pipeline, PipelineOpts}};
 
 #[derive(Default)]
 pub struct Media {
@@ -44,6 +48,20 @@ impl qobject::FenluMedia {
             Some(url) => url.clone(),
             None => QUrl::default()
         }
+    }
+
+    pub fn set_query(self: Pin<&mut Self>, key: QString, query: QString) {
+        *self.cxx_qt_ffi_rust_mut().queries.entry((&key).into()).or_default() = (&query).into();
+    }
+
+    pub fn run_pipeline(self: Pin<&mut Self>) {
+        let qthread = self.cxx_qt_ffi_qt_thread();
+        let queries = self.queries.clone();
+
+        thread::spawn(move || {
+            let rt = Runtime::new().expect("runtime should be created");
+            rt.block_on(handle_media(qthread, queries));
+        });
     }
 }
 
@@ -73,8 +91,8 @@ async fn handle_media(thread: FenluMediaCxxQtThread, queries: HashMap<String, St
 
         items.push(url);
 
-        // send items to qt every 500ms
-        if last_update.elapsed().as_millis() >= 500 {
+        // send items to qt every media_update_interval
+        if last_update.elapsed().as_millis() >= CONFIG.media_update_interval {
             last_update = Instant::now();
             render(thread.clone(), items.clone());
         }
@@ -83,15 +101,9 @@ async fn handle_media(thread: FenluMediaCxxQtThread, queries: HashMap<String, St
     render(thread, items.clone());
 }
 
-impl cxx_qt::Initialize for qobject::FenluMedia {
+impl cxx_qt::Initialize for FenluMedia {
     fn initialize(self: Pin<&mut Self>) {
-        let qthread = self.cxx_qt_ffi_qt_thread();
-        let queries = self.queries.clone();
-
-        thread::spawn(move || {
-            let rt = Runtime::new().expect("runtime should be created");
-            rt.block_on(handle_media(qthread, queries));
-        });
+        self.run_pipeline();
     }
 }
 

@@ -18,10 +18,6 @@ Item {
         }
     }
 
-    ListModel {
-        id: mediaModel
-    }
-
     CustomScrollGridView {
         property var columns: 5
 
