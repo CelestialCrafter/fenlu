@@ -24,6 +24,7 @@
           toml-edit
           exiftool
           dkjson
+          luaexpat
         ];
       };
     };

@@ -20,4 +20,5 @@ pub struct Metadata {
 #[serde(tag = "type")]
 pub enum Extra {
     Image { width: u64, height: u64 },
+    PDF { author: String, summary: String }
 }
