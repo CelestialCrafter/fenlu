@@ -15,6 +15,10 @@ Item {
         id: scripts
     }
 
+    Rectangle {
+        anchors.fill: parent
+    }
+
     Column {
         id: column
         anchors.fill: parent
