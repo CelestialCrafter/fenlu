@@ -48,6 +48,10 @@ async fn create_media_table(conn: &mut SqliteConnection) -> Result<()> {
 }
 
 pub async fn run_pipeline(queries: Queries) -> Result<Receiver<Metadata>> {
+    // generate: source (create) -> transform -> filter
+    // load: db -> source (load) -> filter
+    // generate_save: db -> source (create) -> transform -> save -> filter
+
     let conn = &mut if let PipelineMode::Generate = CONFIG.pipeline_mode {
         None
     } else {
@@ -67,7 +71,12 @@ pub async fn run_pipeline(queries: Queries) -> Result<Receiver<Metadata>> {
     } else {
         create_sources(queries.clone()).await?
     };
-    let transformed = apply_transforms(source, queries.clone()).await?;
+
+    let transformed = if let PipelineMode::Load = CONFIG.pipeline_mode {
+        source
+    } else {
+        apply_transforms(source, queries.clone()).await?
+    };
 
     let final_rx;
     if let PipelineMode::GenerateSave = CONFIG.pipeline_mode {

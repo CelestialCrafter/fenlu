@@ -23,6 +23,7 @@ Window {
 
         Queries {
             id: queries
+            z: 5
             Layout.preferredHeight: parent.height * 0.1
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignTop
@@ -30,6 +31,7 @@ Window {
         }
 
         Label {
+            z: 1
             Layout.fillHeight: true
             Layout.alignment: Qt.AlignHCenter | Qt.AlignTop
             text: "no media loaded"
@@ -37,6 +39,7 @@ Window {
         }
 
         Media {
+            z: 1
             Layout.fillHeight: true
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignBottom
