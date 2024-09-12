@@ -15,6 +15,7 @@
 
 (let [handle (assert (io.popen (.. "exiftool -p '$Directory|$FileName|$ImageWidth|$ImageHeight|$MimeType|$FileSize' " config.path)))]
   (each [line (handle:lines)]
+    (print config.query)
     (add_uri (transform (icollect [s (string.gmatch line "[^|]+")] s)))))
 
 

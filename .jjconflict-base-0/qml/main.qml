@@ -29,11 +29,19 @@ Window {
             media: fenluMedia
         }
 
+        Label {
+            Layout.fillHeight: true
+            Layout.alignment: Qt.AlignHCenter | Qt.AlignTop
+            text: "no media loaded"
+            visible: mediaModel.count === 0
+        }
+
         Media {
             Layout.fillHeight: true
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignBottom
             media: fenluMedia
+            visible: mediaModel.count > 0
         }
     }
 }

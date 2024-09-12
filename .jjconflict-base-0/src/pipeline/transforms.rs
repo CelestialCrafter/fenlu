@@ -3,8 +3,8 @@ use eyre::{Error, Result};
 use glob::glob;
 use mlua::{Function, Lua, LuaSerdeExt, RegistryKey, Value};
 use tokio::task;
-use crate::metadata::Metadata;
-use super::fennel::compile_fennel;
+use crate::{metadata::Metadata, utils};
+use super::{fennel::compile_fennel, inject_query, Queries};
 
 pub struct Transform {
     lua: Lua,
@@ -29,7 +29,8 @@ impl Transform {
 }
 
 pub async fn apply_transforms<'a>(
-    input: Receiver<Metadata>
+    input: Receiver<Metadata>,
+    queries: Queries
 ) -> Result<Receiver<Metadata>> {
     let (tx, rx) = channel();
 
@@ -37,8 +38,12 @@ pub async fn apply_transforms<'a>(
         let mut transforms: Vec<(PathBuf, Result<Transform>)> = glob("scripts/*-transform.fnl")
             .expect("glob should be valid")                                                                            
             .map(|path| path.expect("path read should succeed"))
+            .filter(|path| utils::is_script_whitelisted(path))
             .map(|path| {
-                let (compiled, config) = compile_fennel(path.clone());
+                let query = queries.get(&utils::path_to_name(&path)).cloned().unwrap_or_default();
+                let (compiled, mut config) = compile_fennel(path.clone());
+                config = inject_query(config, query);
+
                 let transform = Transform::new(&compiled, &config);
                 (path, transform)
             })

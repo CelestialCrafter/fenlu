@@ -20,11 +20,11 @@ Item {
         anchors.fill: parent
 
         Repeater {
-            model: scripts.filtersTotal
+            model: scripts.total
             Item {
                 width: parent.width
                 height: 15
-                property string script: scripts.getFilter(index)
+                property string script: scripts.item(index)
                 Text {
                     id: label
                     text: script + ": "

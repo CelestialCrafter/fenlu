@@ -30,18 +30,18 @@ pub mod qobject {
     impl cxx_qt::Constructor<()> for FenluMedia {}
 }
 
-use std::{collections::HashMap, pin::Pin, thread, time::Instant};
+use std::{pin::Pin, thread, time::Instant};
 use cxx_qt_lib::{QString, QUrl};
 use qobject::{FenluMedia, FenluMediaCxxQtThread};
 use tokio::runtime::Runtime;
 
-use crate::{config::CONFIG, pipeline::{run_pipeline, PipelineOpts}};
+use crate::{config::CONFIG, pipeline::{run_pipeline, Queries}};
 
 #[derive(Default)]
 pub struct Media {
     total: usize,
     items: Vec<QUrl>,
-    queries: HashMap<String, String>
+    queries: Queries
 }
 
 impl qobject::FenluMedia {
@@ -80,18 +80,15 @@ fn render(thread: FenluMediaCxxQtThread, items: Vec<QUrl>) {
         }).expect("should be able to queue update");
 }
 
-async fn handle_media(thread: FenluMediaCxxQtThread, queries: HashMap<String, String>) {
+async fn handle_media(thread: FenluMediaCxxQtThread, queries: Queries) {
     let mut items = vec![];
     let mut last_update = Instant::now();
 
-    for media in run_pipeline(PipelineOpts {
-        save: false,
-        load: false,
-        queries
-    })
-    .await
-    .expect("pipeline should succeed")
-    .into_iter() {
+    let rx = run_pipeline(queries)
+        .await
+        .expect("pipeline should succeed");
+
+    for media in rx.into_iter() {
         println!("media recieved: {:?}", media.uri.to_string());
         let url = QUrl::from(&media.uri.to_string());
 
