@@ -1,13 +1,12 @@
-use std::{collections::HashMap, sync::mpsc::{channel, Receiver}};
+use std::sync::mpsc::{channel, Receiver};
 
-use eyre::{eyre, Error, Result};
+use eyre::{Error, Result};
 use tokio::task;
-use toml::{Table, Value};
-use crate::metadata::Metadata;
+use crate::{metadata::Metadata, utils};
 use glob::glob;
 use mlua::{Function, Lua, LuaSerdeExt, RegistryKey};
 
-use super::fennel::compile_fennel;
+use super::{fennel::compile_fennel, inject_query, Queries};
 
 pub struct Filter {
     lua: Lua,
@@ -31,7 +30,7 @@ impl Filter {
 
 pub async fn apply_filters(
     input: Receiver<Metadata>,
-    queries: HashMap<String, String>
+    queries: Queries
 ) -> Result<Receiver<Metadata>> {
     let (tx, rx) = channel();
 
@@ -39,15 +38,11 @@ pub async fn apply_filters(
         let filters: Vec<Filter> = glob("scripts/*-filter.fnl")
             .expect("glob should be valid")
             .map(|path| path.expect("path read should succeed"))
+            .filter(|path| utils::is_script_whitelisted(path))
             .map(|path| {
+                let query = queries.get(&utils::path_to_name(&path)).cloned().unwrap_or_default();
                 let (compiled, mut config) = compile_fennel(path.clone());
-                let name = path.file_name().unwrap().to_os_string().into_string().map_err(|_| eyre!("path is not utf-8"))?;
-
-                let default = String::default();
-                let query = queries.get(name.as_str()).unwrap_or(&default);
-                let mut table: Table = toml::from_str(config.as_str())?;
-                table.entry("query").or_insert(Value::String(query.to_string()));
-                config = toml::to_string(&table)?;
+                config = inject_query(config, query);
 
                 Filter::new(compiled, config)
             })

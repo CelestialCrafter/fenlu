@@ -11,19 +11,13 @@ pub mod qobject {
     unsafe extern "RustQt" {
         #[qobject]
         #[qml_element]
-        #[qproperty(usize, sources_total)]
-        #[qproperty(usize, transforms_total)]
-        #[qproperty(usize, filters_total)]
+        #[qproperty(usize, total)]
         type FenluScripts = super::Scripts;
     }
 
     unsafe extern "RustQt" {
         #[qinvokable]
-        fn get_source(self: &FenluScripts, index: usize) -> QString;
-        #[qinvokable]
-        fn get_transform(self: &FenluScripts, index: usize) -> QString;
-        #[qinvokable]
-        fn get_filter(self: &FenluScripts, index: usize) -> QString;
+        fn item(self: &FenluScripts, index: usize) -> QString;
     }
 
     impl cxx_qt::Constructor<()> for FenluScripts {}
@@ -34,23 +28,11 @@ use cxx_qt_lib::QString;
 use glob::{glob, Paths, PatternError};
 use qobject::FenluScripts;
 
+use crate::utils;
+
 impl qobject::FenluScripts {
-    pub fn get_source(self: &FenluScripts, index: usize) -> QString {
-        match self.sources.get(index as usize) {
-            Some(name) => name.clone(),
-            None => QString::default()
-        }
-    }
-
-    pub fn get_transform(self: &FenluScripts, index: usize) -> QString {
-        match self.transforms.get(index as usize) {
-            Some(name) => name.clone(),
-            None => QString::default()
-        }
-    }
-
-    pub fn get_filter(self: &FenluScripts, index: usize) -> QString {
-        match self.filters.get(index as usize) {
+    pub fn item(self: &FenluScripts, index: usize) -> QString {
+        match self.scripts.get(index as usize) {
             Some(name) => name.clone(),
             None => QString::default()
         }
@@ -59,14 +41,8 @@ impl qobject::FenluScripts {
 
 #[derive(Default)]
 pub struct Scripts {
-    sources: Vec<QString>,
-    sources_total: usize,
-
-    transforms: Vec<QString>,
-    transforms_total: usize,
-
-    filters: Vec<QString>,
-    filters_total: usize
+    scripts: Vec<QString>,
+    total: usize
 }
 
 impl cxx_qt::Initialize for FenluScripts {
@@ -75,24 +51,17 @@ impl cxx_qt::Initialize for FenluScripts {
             glob
                 .expect("glob should be valid")
                 .map(|path| path.expect("path read should succeed"))
-                .map(|path| path.file_name().unwrap().to_os_string().into_string().expect("path should be utf-8"))
+                .filter(|path| utils::is_script_whitelisted(path))
+                .map(|path| utils::path_to_name(&path))
                 .map(|name| QString::from(&name))
                 .collect()
         };
 
-        let sources = glob_to_qstrings(glob("scripts/*-source.fnl"));
-        let transforms = glob_to_qstrings(glob("scripts/*-transform.fnl"));
-        let filters = glob_to_qstrings(glob("scripts/*-filter.fnl"));
-
+        let scripts = glob_to_qstrings(glob("scripts/*-*.fnl"));
         let mut self_mut = self.as_mut().cxx_qt_ffi_rust_mut();
 
-        self_mut.sources_total = sources.len();
-        self_mut.transforms_total = transforms.len();
-        self_mut.filters_total = filters.len();
-
-        self_mut.sources = sources;
-        self_mut.transforms = transforms;
-        self_mut.filters = filters;
+        self_mut.total = scripts.len();
+        self_mut.scripts = scripts;
     }
 }
 
