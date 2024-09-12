@@ -11,7 +11,7 @@ Item {
 
         function onTotalChanged() {
             for (let i = previousTotal; i < media.total; i++) {
-                mediaModel.append({ url: media.item(i) });
+                mediaModel.append({ uri: media.item(i) });
             }
 
             previousTotal = media.total;
@@ -30,16 +30,16 @@ Item {
         cacheBuffer: grid.cellHeight * columns
 
         delegate: Image {
-            required property url url
+            required property url uri
 
             width: grid.cellWidth
             height: grid.cellHeight
             asynchronous: true
             fillMode: Image.PreserveAspectCrop
-            source: url
+            source: uri
             MouseArea {
                 anchors.fill: parent
-                onClicked: media.open(url);
+                onClicked: media.open(uri);
             }
         }
     }
