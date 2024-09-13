@@ -1,0 +1,27 @@
+#!/usr/bin/env python
+
+import os
+import json
+import tomllib
+from urllib.parse import quote
+from PIL import Image, UnidentifiedImageError
+
+with open('config-source-directory.toml', 'rb') as file:
+    config = tomllib.load(file)
+
+for root, _, files in os.walk(os.path.expanduser(config['path'])):
+    for file in files:
+        path = os.path.join(root, file)
+
+        try:
+            image = Image.open(path)
+        except UnidentifiedImageError:
+            continue
+    
+        print(json.dumps({
+            'title': file,
+            'uri': 'file://' + quote(path),
+            'height': image.width,
+            'width': image.height,
+            'type': 'Image'
+        }))
