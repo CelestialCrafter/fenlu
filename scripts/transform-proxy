@@ -12,7 +12,7 @@ for line in sys.stdin:
     line = line.rstrip()
     media = json.loads(line)
 
-    suffix = ""
+    suffix = ''
     if 'source-pixiv' in media['history']:
         suffix = "pixiv"
     if 'source-kemono' in media['history']:
@@ -20,7 +20,7 @@ for line in sys.stdin:
     if 'source-arxiv' in media['history']:
         suffix = "arxiv"
 
-    uri = urlparse(media["uri"])
+    uri = urlparse(media['uri'])
     if 'http' in uri.scheme:
         if uri.path == '':
             uri = uri._replace(path = '/')
@@ -30,6 +30,6 @@ for line in sys.stdin:
         uri = uri._replace(netloc=config['proxy_authority'], path=suffix + uri.path)
 
     # "urlunparse".. really?
-    media["uri"] = urlunparse(uri)
+    media['uri'] = urlunparse(uri)
 
     print(json.dumps(media))
