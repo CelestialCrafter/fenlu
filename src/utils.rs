@@ -14,7 +14,7 @@ pub fn path_to_name(path: &PathBuf) -> String {
 pub fn is_script_whitelisted(path: &PathBuf) -> bool {
     let name = path_to_name(path);
     for script in CONFIG.whitelisted_scripts.clone() {
-        if name.starts_with(&script) {
+        if name.ends_with(&script) {
             return true
         }
     }
