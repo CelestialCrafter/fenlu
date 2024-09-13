@@ -18,6 +18,7 @@
           pkg-config
 
           python312Packages.pillow
+          python312Packages.requests
         ];
       };
     };
