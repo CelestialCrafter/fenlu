@@ -27,7 +27,7 @@ go.work.sum
 *.db
 config.toml
 
-scripts/config-*
+scripts/config-*.toml
 *.db
 *.db-journal
 config.toml
