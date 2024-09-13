@@ -10,8 +10,14 @@ use super::Queries;
 fn create_transform(path: PathBuf, input: Receiver<Metadata>, query: String) -> Receiver<Metadata> {
     let (tx, rx) = channel();
 
+    let path = path.canonicalize().expect("path should be canonicalizable");
+
+    let mut dir = path.clone();
+    dir.pop();
+
     let mut child = Command::new(path)
         .arg(query)
+        .current_dir(dir)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()
@@ -23,7 +29,7 @@ fn create_transform(path: PathBuf, input: Receiver<Metadata>, query: String) -> 
 
     task::spawn(async move {
         for media in input.iter() {
-            let string = serde_json::to_string(&media).expect("Metadata should decode to string");
+            let string = serde_json::to_string(&media).expect("Metadata should decode to string") + "\n";
             stdin.write_all(string.as_bytes()).expect("should be able to write stdin");
         }
     });
