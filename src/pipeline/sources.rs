@@ -30,7 +30,7 @@ fn create_source(path: PathBuf, tx: Sender<Metadata>, query: String) -> Result<(
     for line in reader.lines() {
         let line = line.expect("should be able to read line");
         let mut media: Metadata = serde_json::from_str(line.as_str()).expect("line should decode to Metadata");
-        media.source = name.clone();
+        media.history.push(name.clone());
         tx.send(media).expect("reciever should not drop");
     }
 

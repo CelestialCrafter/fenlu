@@ -9,7 +9,7 @@ pub struct Metadata {
     #[serde(default)]
     pub extra_source: String,
     #[serde(default)]
-    pub source: String,
+    pub history: Vec<String>,
     #[serde(default)]
     pub tags: Vec<String>,
     #[serde(flatten)]

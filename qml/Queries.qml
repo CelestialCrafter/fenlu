@@ -7,6 +7,7 @@ Item {
     required property FenluMedia media
 
     function runPipeline() {
+        media.setTotal(0);
         mediaModel.clear();
         media.runPipeline();
     }
