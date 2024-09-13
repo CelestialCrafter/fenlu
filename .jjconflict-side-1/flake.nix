@@ -17,6 +17,7 @@
           cargo-watch
           pkg-config
 
+          python312Packages.python
           python312Packages.pillow
           python312Packages.requests
         ];
