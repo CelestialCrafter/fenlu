@@ -15,7 +15,7 @@ fn create_transform(path: PathBuf, input: Receiver<Metadata>, query: String) -> 
     let mut dir = path.clone();
     dir.pop();
 
-    let mut child = Command::new(path)
+    let mut child = Command::new(path.clone())
         .arg(query)
         .current_dir(dir)
         .stdin(Stdio::piped())
@@ -35,9 +35,12 @@ fn create_transform(path: PathBuf, input: Receiver<Metadata>, query: String) -> 
     });
 
     task::spawn(async move {
+        let name = utils::path_to_name(&path);
+
         for line in reader.lines() {
             let line = line.expect("should be able to read line");
-            let media: Metadata = serde_json::from_str(line.as_str()).expect("line should decode to Metadata");
+            let mut media: Metadata = serde_json::from_str(line.as_str()).expect("line should decode to Metadata");
+            media.history.push(name.clone());
             tx.send(media).expect("reciever should not drop");
         }
     });
