@@ -43,6 +43,6 @@ fn default_pipeline_mode() -> PipelineMode {
 }
 
 pub static CONFIG: Lazy<Config> = Lazy::new(|| {
-    let data = read_to_string(CONFIG_PATH).expect("reading config file should succeed");
-    toml::from_str::<Config>(data.as_str()).expect("parsing config should succeed")
+    let data = read_to_string(CONFIG_PATH).expect("could not read config file");
+    toml::from_str::<Config>(data.as_str()).expect("could not parse config file")
 });

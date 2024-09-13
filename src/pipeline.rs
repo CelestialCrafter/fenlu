@@ -1,16 +1,12 @@
-pub mod fennel;
-pub mod filters;
 pub mod sources;
 pub mod transforms;
 
 use std::{collections::HashMap, fs::File, io::ErrorKind, sync::mpsc::{channel, Receiver}};
 
 use eyre::{Error, Result};
-use toml::{Table, Value};
 use crate::{config::{PipelineMode, CONFIG}, metadata::Metadata};
-use filters::apply_filters;
-use sources::{load_sources, create_sources};
 use transforms::apply_transforms;
+use sources::{load_sources, create_sources};
 use sqlx::{Connection, SqliteConnection};
 use tokio::task::{self};
 
@@ -28,13 +24,6 @@ fn create_db_file() -> Result<()> {
     }
 }
 
-pub type Queries = HashMap<String, String>;
-fn inject_query(input: String, query: String) -> String {
-    let mut table: Table = toml::from_str(input.as_str()).expect("could not parse string into table");
-    table.entry("query").or_insert(Value::String(query.to_string()));
-    toml::to_string(&table).expect("could not parse table into string")
-}
-
 async fn create_media_table(conn: &mut SqliteConnection) -> Result<()> {
     sqlx::query(
         "CREATE TABLE IF NOT EXISTS media (
@@ -47,10 +36,11 @@ async fn create_media_table(conn: &mut SqliteConnection) -> Result<()> {
     Ok(())
 }
 
+pub type Queries = HashMap<String, String>;
 pub async fn run_pipeline(queries: Queries) -> Result<Receiver<Metadata>> {
-    // generate: source (create) -> transform -> filter
-    // load: db -> source (load) -> filter
-    // generate_save: db -> source (create) -> transform -> save -> filter
+    // generate: source (create) -> transform
+    // load: db -> source (load)
+    // generate_save: db -> source (create) -> transform -> save
 
     let conn = &mut if let PipelineMode::Generate = CONFIG.pipeline_mode {
         None
@@ -78,7 +68,6 @@ pub async fn run_pipeline(queries: Queries) -> Result<Receiver<Metadata>> {
         apply_transforms(source, queries.clone()).await?
     };
 
-    let final_rx;
     if let PipelineMode::GenerateSave = CONFIG.pipeline_mode {
         let (tx, rx) = channel();
 
@@ -101,13 +90,11 @@ pub async fn run_pipeline(queries: Queries) -> Result<Receiver<Metadata>> {
             handle
                 .await
                 .expect("handle should succeed")
-                .expect("db save should succeed");
+                .expect("could not save to db");
         });
 
-        final_rx = rx;
+        Ok(rx)
     } else {
-        final_rx = transformed;
+        Ok(transformed)
     }
-
-    Ok(apply_filters(final_rx, queries).await?)
 }

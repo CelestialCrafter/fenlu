@@ -25,10 +25,9 @@ pub mod qobject {
 
 use std::pin::Pin;
 use cxx_qt_lib::QString;
-use glob::{glob, Paths, PatternError};
 use qobject::FenluScripts;
 
-use crate::utils;
+use crate::{pipeline::{sources, transforms}, utils};
 
 impl qobject::FenluScripts {
     pub fn item(self: &FenluScripts, index: usize) -> QString {
@@ -47,19 +46,15 @@ pub struct Scripts {
 
 impl cxx_qt::Initialize for FenluScripts {
     fn initialize(mut self: Pin<&mut Self>) {
-        let glob_to_qstrings = |glob: Result<Paths, PatternError>| -> Vec<QString> {
-            glob
-                .expect("glob should be valid")
-                .map(|path| path.expect("path read should succeed"))
+        let scripts: Vec<QString> = sources::scripts()
+                .chain(transforms::scripts())
+                .map(|path| path.expect("could not read path"))
                 .filter(|path| utils::is_script_whitelisted(path))
                 .map(|path| utils::path_to_name(&path))
                 .map(|name| QString::from(&name))
-                .collect()
-        };
+                .collect();
 
-        let scripts = glob_to_qstrings(glob("scripts/*-*.fnl"));
         let mut self_mut = self.as_mut().cxx_qt_ffi_rust_mut();
-
         self_mut.total = scripts.len();
         self_mut.scripts = scripts;
     }
