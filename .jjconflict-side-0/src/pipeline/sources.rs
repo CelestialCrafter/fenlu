@@ -1,43 +1,38 @@
-use std::{path::PathBuf, sync::mpsc::{channel, Receiver, Sender}};
+use std::{io::{BufRead, BufReader}, path::PathBuf, process::{Command, Stdio}, sync::mpsc::{channel, Receiver, Sender}};
 
 use eyre::Result;
 use futures::future::try_join_all;
-use glob::glob;
-use mlua::{Lua, LuaSerdeExt, Value};
+use glob::{glob, GlobError};
 use sqlx::{FromRow, SqliteConnection};
 use tokio::task;
 
 use crate::{metadata::Metadata, utils};
 
-use super::{fennel::compile_fennel, inject_query, Queries};
+use super::Queries;
 
 fn create_source(path: PathBuf, tx: Sender<Metadata>, query: String) -> Result<()> {
-    let (compiled, mut config) = compile_fennel(path.clone());
-    config = inject_query(config, query);
     let name = utils::path_to_name(&path);
+    let path = path.canonicalize().expect("path should be canonicalizable");
 
-    let lua = unsafe { Lua::unsafe_new() };
-    let globals = lua.globals();
+    let mut dir = path.clone();
+    dir.pop();
 
-    globals.set(
-        "add_uri",
-        lua.create_function(move |lua, media: Value| {
-            let tx = tx.clone();
-            let mut media: Metadata = lua.from_value(media)?;
-            media.source = name.clone();
+    let mut child = Command::new(path)
+        .arg(query)
+        .current_dir(dir)
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .spawn()
+        .expect("could not start command");
+    let stdout = child.stdout.take().expect("could not take stdout");
+    let reader = BufReader::new(stdout);
 
-            if !media.uri.is_uri() {
-                eprintln!("source error: uri {} is invalid", media.uri);
-                return Ok(());
-            }
-
-            tx.send(media).expect("reciever should not drop");
-
-            Ok(())
-        })?,
-    )?;
-
-    lua.load(&compiled).call(config)?;
+    for line in reader.lines() {
+        let line = line.expect("should be able to read line");
+        let mut media: Metadata = serde_json::from_str(line.as_str()).expect("line should decode to Metadata");
+        media.source = name.clone();
+        tx.send(media).expect("reciever should not drop");
+    }
 
     Ok(())
 }
@@ -45,6 +40,10 @@ fn create_source(path: PathBuf, tx: Sender<Metadata>, query: String) -> Result<(
 #[derive(FromRow)]
 struct MetadataRowString {
     metadata: String
+}
+
+pub fn scripts() -> impl Iterator<Item = std::result::Result<PathBuf, GlobError>> {
+    glob("scripts/source-*").expect("glob should be valid")
 }
 
 pub async fn load_sources(conn: &mut SqliteConnection) -> Result<Receiver<Metadata>> {
@@ -64,9 +63,8 @@ pub async fn create_sources(queries: Queries) -> Result<Receiver<Metadata>> {
     let (tx, rx) = channel();
     let mut handles = vec![];
 
-    for path in glob("scripts/*-source.fnl")
-            .expect("path read should be valid")
-            .map(|path| path.expect("path read should succeed")) 
+    for path in scripts()
+            .map(|path| path.expect("could not read path")) 
             .filter(|path| utils::is_script_whitelisted(path))
         {
             let tx = tx.clone();

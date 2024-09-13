@@ -86,7 +86,7 @@ async fn handle_media(thread: FenluMediaCxxQtThread, queries: Queries) {
 
     let rx = run_pipeline(queries)
         .await
-        .expect("pipeline should succeed");
+        .expect("could not run pipeline");
 
     for media in rx.into_iter() {
         println!("media recieved: {:?}", media.uri.to_string());

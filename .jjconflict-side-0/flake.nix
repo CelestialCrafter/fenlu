@@ -10,21 +10,14 @@
     {
       devShells.x86_64-linux.default = pkgs.mkShell {
         buildInputs = with pkgs; [ gcc-unwrapped.lib ];
-        packages = with pkgs; with lua54Packages; [
+        packages = with pkgs; [
           qt6.full
           cargo
           rustc
           cargo-watch
           pkg-config
 
-          lua
-          fennel
-          luafilesystem
-          lua-curl
-          toml-edit
-          exiftool
-          dkjson
-          luaexpat
+          python312Packages.pillow
         ];
       };
     };

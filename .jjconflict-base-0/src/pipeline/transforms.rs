@@ -1,78 +1,69 @@
-use std::{path::PathBuf, sync::mpsc::{channel, Receiver}};
-use eyre::{Error, Result};
-use glob::glob;
-use mlua::{Function, Lua, LuaSerdeExt, RegistryKey, Value};
+use std::{io::{BufRead, BufReader, Write}, path::PathBuf, process::{Command, Stdio}, sync::mpsc::{channel, Receiver}};
+
+use eyre::Result;
 use tokio::task;
 use crate::{metadata::Metadata, utils};
-use super::{fennel::compile_fennel, inject_query, Queries};
+use glob::{glob, GlobError};
 
-pub struct Transform {
-    lua: Lua,
-    key: RegistryKey,
+use super::Queries;
+
+fn create_transform(path: PathBuf, input: Receiver<Metadata>, query: String) -> Receiver<Metadata> {
+    let (tx, rx) = channel();
+
+    let mut child = Command::new(path)
+        .arg(query)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .expect("could not start command");
+
+    let stdout = child.stdout.take().expect("could not take stdout");
+    let mut stdin = child.stdin.take().expect("could not take stdin");
+    let reader = BufReader::new(stdout);
+
+    task::spawn(async move {
+        for media in input.iter() {
+            let string = serde_json::to_string(&media).expect("Metadata should decode to string");
+            stdin.write_all(string.as_bytes()).expect("should be able to write stdin");
+        }
+    });
+
+    task::spawn(async move {
+        for line in reader.lines() {
+            let line = line.expect("should be able to read line");
+            let media: Metadata = serde_json::from_str(line.as_str()).expect("line should decode to Metadata");
+            tx.send(media).expect("reciever should not drop");
+        }
+    });
+    
+    rx
 }
 
-impl Transform {
-    pub fn new(compiled: &str, config: &str) -> Result<Self> {
-        let lua = unsafe { Lua::unsafe_new() };
-        let transform_fn = lua.load(compiled).call::<String, Function>(config.to_string())?;
-        let key = lua.create_registry_value(transform_fn)?;
-
-        Ok(Transform { lua, key })
-    }
-
-    pub fn apply(&self, media: &Metadata) -> Result<Metadata> {
-        let transform_fn: Function = self.lua.registry_value(&self.key)?;
-        let value = transform_fn.call::<_, Value>(self.lua.to_value(media)?)?;
-
-        Ok(self.lua.from_value(value)?)
-    }
+pub fn scripts() -> impl Iterator<Item = std::result::Result<PathBuf, GlobError>> {
+    glob("scripts/transform-*").expect("glob should be valid")
 }
 
-pub async fn apply_transforms<'a>(
+pub async fn apply_transforms(
     input: Receiver<Metadata>,
     queries: Queries
 ) -> Result<Receiver<Metadata>> {
     let (tx, rx) = channel();
 
-    let handle = task::spawn(async move {
-        let mut transforms: Vec<(PathBuf, Result<Transform>)> = glob("scripts/*-transform.fnl")
-            .expect("glob should be valid")                                                                            
-            .map(|path| path.expect("path read should succeed"))
-            .filter(|path| utils::is_script_whitelisted(path))
-            .map(|path| {
-                let query = queries.get(&utils::path_to_name(&path)).cloned().unwrap_or_default();
-                let (compiled, mut config) = compile_fennel(path.clone());
-                config = inject_query(config, query);
-
-                let transform = Transform::new(&compiled, &config);
-                (path, transform)
-            })
+    let data: Vec<(PathBuf, String)> = scripts()
+        .map(|path| path.expect("could not read path"))
+        .filter(|path| utils::is_script_whitelisted(path))
+        .map(|path| (path.clone(), queries.get(&utils::path_to_name(&path)).cloned().unwrap_or_default()))
         .collect();
 
-        transforms.sort_unstable_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+    let mut prev = input;
+    for (path, query) in data {
+        prev = create_transform(path, prev, query)
+    }
 
-        let transforms: Vec<Transform> = transforms
-            .into_iter()
-            .map(|(_, transform)| transform)
-            .collect::<Result<Vec<Transform>>>()?;
-
-        for media in input {
-            let mut output = media;
-            for transform in &transforms {
-                output = transform.apply(&output)?;
-            } 
-
-            tx.send(output)?;
+    task::spawn(async move {
+        for media in prev.into_iter() {
+            tx.send(media).expect("reciever should not drop");
         }
-
-        Ok::<_, Error>(())
-    });
-
-    task::spawn(async {
-        handle
-            .await
-            .expect("handle should succeed")
-            .expect("transform should succeed");
     });
 
     Ok(rx)
