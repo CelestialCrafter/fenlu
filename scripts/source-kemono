@@ -1,0 +1,32 @@
+#!/usr/bin/env python
+
+import requests
+import json
+import tomllib
+
+with open('config-source-kemono.toml', 'rb') as file:
+    config = tomllib.load(file)
+
+def request():
+    url = 'https://kemono.su/api/v1/account/favorites?type=post'
+    headers = {
+        'Cookie': f'session={config["account"]["token"]}'
+    }
+
+    return requests.get(
+        url,
+        headers=headers
+    ).json()
+
+def transform(post):
+    return json.dumps({
+        'title': post['title'],
+        'uri': f'http://kemono.su{post["file"]["path"]}',
+        'height': 0,
+        'width': 0,
+        'type': 'Image',
+        })
+
+for post in request():
+    print(transform(post))
+
