@@ -24,3 +24,4 @@ scripts/config-*.toml
 *.db
 *.db-journal
 config.toml
+result
