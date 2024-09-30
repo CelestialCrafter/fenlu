@@ -11,13 +11,14 @@ pub mod qobject {
     unsafe extern "RustQt" {
         #[qobject]
         #[qml_element]
+        #[qml_singleton]
         #[qproperty(usize, total)]
         type FenluMedia = super::Media;
     }
 
     unsafe extern "RustQt" {
         #[qinvokable]
-        fn item(self: &FenluMedia, index: usize) -> QUrl;
+        fn item(self: &FenluMedia, index: usize) -> QString;
         #[qinvokable]
         fn open(self: &FenluMedia, url: QUrl);
         #[qinvokable]
@@ -33,22 +34,32 @@ pub mod qobject {
 use std::{pin::Pin, thread, time::Instant};
 use cxx_qt_lib::{QString, QUrl};
 use qobject::{FenluMedia, FenluMediaCxxQtThread};
-use tokio::runtime::Runtime;
+use tokio::{runtime::Runtime, sync::mpsc, task};
 
-use crate::{config::CONFIG, pipeline::{run_pipeline, Queries}};
+use crate::{config::CONFIG, pipeline::{Pipeline, Queries}};
 
 #[derive(Default)]
 pub struct Media {
     total: usize,
-    items: Vec<QUrl>,
-    queries: Queries
+    items: Vec<QString>,
+    queries: Queries,
+    pipeline: Pipeline
+}
+
+fn render(thread: FenluMediaCxxQtThread, items: Vec<QString>) {
+        thread.queue(move |mut media| {
+            println!("rendering media");
+            let amount = items.len();
+            media.as_mut().cxx_qt_ffi_rust_mut().items = items;
+            media.as_mut().set_total(amount);
+        }).expect("should be able to queue update");
 }
 
 impl qobject::FenluMedia {
-    pub fn item(&self, index: usize) -> QUrl {
+    pub fn item(&self, index: usize) -> QString {
         match self.items.get(index as usize) {
-            Some(url) => url.clone(),
-            None => QUrl::default()
+            Some(media) => media.clone(),
+            None => QString::default()
         }
     }
 
@@ -64,44 +75,38 @@ impl qobject::FenluMedia {
         let qthread = self.cxx_qt_ffi_qt_thread();
         let queries = self.queries.clone();
 
+        let buffer_size = 48;
+        let (tx, mut rx) = mpsc::channel(buffer_size);
+
+        let pipeline_future = self.pipeline.run(buffer_size, tx);
+
         thread::spawn(move || {
-            let rt = Runtime::new().expect("runtime should be created");
-            rt.block_on(handle_media(qthread, queries));
+            let rt = Runtime::new().expect("could not create runtime");
+            rt.block_on(async {
+                let pipeline_handle = task::spawn(pipeline_future);
+                task::spawn(async {
+                    let mut items = vec![];
+                    let mut last_update = Instant::now();
+
+                    while let Some(media) = rx.recv().await {
+                        println!("media recieved: {:?}", media.uri.to_string());
+                        let media = QString::from(&serde_json::to_string(&media).expect("media should encode to json"));
+                        items.push(media);
+
+                        // send items to qt every media_update_interval
+                        if last_update.elapsed().as_millis() >= CONFIG.media_update_interval {
+                            last_update = Instant::now();
+                            render(qthread.clone(), items.clone());
+                        }
+                    }
+
+                    render(qthread, items.clone());
+                });
+
+                pipeline_handle.await.expect("could not run pipeline");
+            });
         });
     }
-}
-
-fn render(thread: FenluMediaCxxQtThread, items: Vec<QUrl>) {
-        thread.queue(move |mut media| {
-            println!("rendering media");
-            let amount = items.len();
-            media.as_mut().cxx_qt_ffi_rust_mut().items = items;
-            media.as_mut().set_total(amount);
-        }).expect("should be able to queue update");
-}
-
-async fn handle_media(thread: FenluMediaCxxQtThread, queries: Queries) {
-    let mut items = vec![];
-    let mut last_update = Instant::now();
-
-    let rx = run_pipeline(queries)
-        .await
-        .expect("could not run pipeline");
-
-    for media in rx.into_iter() {
-        println!("media recieved: {:?}", media.uri.to_string());
-        let url = QUrl::from(&media.uri.to_string());
-
-        items.push(url);
-
-        // send items to qt every media_update_interval
-        if last_update.elapsed().as_millis() >= CONFIG.media_update_interval {
-            last_update = Instant::now();
-            render(thread.clone(), items.clone());
-        }
-    }
-
-    render(thread, items.clone());
 }
 
 impl cxx_qt::Initialize for FenluMedia {
