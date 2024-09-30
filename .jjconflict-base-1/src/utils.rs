@@ -1,6 +1,14 @@
+pub mod child_guard;
+
 use std::path::PathBuf;
 
+use uuid::Uuid;
+
 use crate::config::CONFIG;
+
+pub fn generate_id() -> String {
+    Uuid::new_v4().to_string()
+}
 
 pub fn path_to_name(path: &PathBuf) -> String {
     path

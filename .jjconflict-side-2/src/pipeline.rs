@@ -1,14 +1,9 @@
-pub mod sources;
-pub mod transforms;
+use std::{collections::HashMap, fs::{read_dir, File}, io::ErrorKind, path::PathBuf, sync::Arc};
 
-use std::{collections::HashMap, fs::File, io::ErrorKind, sync::mpsc::{channel, Receiver}};
-
-use eyre::{Error, Result};
-use crate::{config::{PipelineMode, CONFIG}, metadata::Metadata};
-use transforms::apply_transforms;
-use sources::{load_sources, create_sources};
-use sqlx::{Connection, SqliteConnection};
-use tokio::task::{self};
+use eyre::Result;
+use crate::{protocol::{media, messages::Request, query}, script, utils};
+use sqlx::SqliteConnection;
+use tokio::{sync::mpsc, task};
 
 pub const DB_PATH: &str = "fenlu.db";
 
@@ -36,65 +31,144 @@ async fn create_media_table(conn: &mut SqliteConnection) -> Result<()> {
     Ok(())
 }
 
-pub type Queries = HashMap<String, String>;
-pub async fn run_pipeline(queries: Queries) -> Result<Receiver<Metadata>> {
-    // generate: source (create) -> transform
-    // load: db -> source (load)
-    // generate_save: db -> source (create) -> transform -> save
+pub struct Pipeline {
+    pub scripts: Vec<Arc<script::Script>>,
+}
 
-    let conn = &mut if let PipelineMode::Generate = CONFIG.pipeline_mode {
-        None
-    } else {
-        // make sure load is checked before create_db_file is called
-        // load is enabled by default only if the db file exists
-        // to allow for generation on first app run
-        create_db_file()?;
-
-        let mut conn = SqliteConnection::connect("fenlu.db").await?;
-        create_media_table(&mut conn).await?;
-
-        Some(conn)
-    };
-
-    let source = if let PipelineMode::Load = CONFIG.pipeline_mode {
-        load_sources(conn.as_mut().unwrap()).await?
-    } else {
-        create_sources(queries.clone()).await?
-    };
-
-    let transformed = if let PipelineMode::Load = CONFIG.pipeline_mode {
-        source
-    } else {
-        apply_transforms(source, queries.clone()).await?
-    };
-
-    if let PipelineMode::GenerateSave = CONFIG.pipeline_mode {
-        let (tx, rx) = channel();
-
-        let handle = task::spawn(async move {
-            let mut conn = SqliteConnection::connect("fenlu.db").await?;
-            for media in transformed.into_iter() {
-                sqlx::query("INSERT OR IGNORE INTO media (uri, metadata) VALUES ($1, $2)")
-                    .bind(media.uri.to_string())
-                    .bind(serde_json::to_string(&media)?)
-                    .execute(&mut conn)
-                    .await?;
-
-                tx.send(media)?;
+impl Pipeline {
+    pub async fn set_queries(&self, queries: Queries) -> Result<()> {
+        for script in self.scripts.clone() {
+            if !script.capabilities.query.query {
+                continue;
             }
 
-            Ok::<_, Error>(())
-        });
+            let script_query = match queries.get(&utils::path_to_name(&script.path)) {
+                Some(query) => query,
+                None => continue
+            }.clone();
 
-        task::spawn(async {
-            handle
-                .await
-                .expect("handle should succeed")
-                .expect("could not save to db");
-        });
 
-        Ok(rx)
-    } else {
-        Ok(transformed)
+            script.request(Request {
+                id: utils::generate_id(),
+                method: query::QUERY_METHOD.to_string(),
+                params: serde_json::to_value(query::QueryRequest {
+                   query: script_query 
+                })?
+            });
+        }
+
+        Ok(())
     }
+
+    pub async fn run(&self, buffer_size: usize, output: mpsc::Sender<media::Media>) -> Result<()> {
+        // setup
+        let mut source_scripts = vec![];
+        let mut transform_scripts = vec![];
+        let mut filter_scripts = vec![];
+
+        for script in self.scripts.clone() {
+            if script.capabilities.media.source {
+                source_scripts.push(script);
+            } else if script.capabilities.media.transform {
+                transform_scripts.push(script);
+            } else if script.capabilities.media.filter {
+                filter_scripts.push(script);
+            }
+        }
+
+        let (tx_s, mut rx_s) = mpsc::channel(buffer_size);
+        let (tx_t, mut rx_t) = mpsc::channel(buffer_size);
+
+        let sources = task::spawn(async move {
+            for source in source_scripts {
+                loop {
+                    let response: media::GenerateResponse = serde_json::from_value(source.request(Request {
+                        id: utils::generate_id(),
+                        method: media::GENERATE_METHOD.to_string(),
+                        params: serde_json::to_value(media::GenerateRequest {
+                            batch_size: buffer_size.clone() as u32
+                        })?
+                    }).await?.result()?)?;
+
+                    for media in response.media {
+                        tx_s.send(media).await?;
+                    }
+
+                    if response.finished {
+                        break;
+                    }
+                }
+            }
+
+            Ok::<_, eyre::Report>(())
+        });
+
+        // transforms
+        let transforms = task::spawn(async move {
+            while let Some(mut media) = rx_s.recv().await {
+                for transform in transform_scripts.clone() {
+                    media = serde_json::from_value(transform.request(Request {
+                        id: utils::generate_id(),
+                        method: media::TRANSFORM_METHOD.to_string(),
+                        params: serde_json::to_value(media)?
+                    }).await?.result()?)?;
+                }
+
+                tx_t.send(media).await?;
+            }
+            Ok::<_, eyre::Report>(())
+        });
+
+        // filters
+        let filters = task::spawn(async move {
+            while let Some(media) = rx_t.recv().await {
+                let mut included = true;
+                let value = serde_json::to_value(media.clone())?;
+
+                for filter in filter_scripts.clone() {
+                    let response: media::FilterResponse = serde_json::from_value(filter.request(Request {
+                        id: utils::generate_id(),
+                        method: media::FILTER_METHOD.to_string(),
+                        params: value.clone()
+                    }).await?.result()?)?;
+
+                    if !response.included {
+                        included = false;
+                        break
+                    }
+                }
+
+                if included {
+                    output.send(media).await?;
+                }
+            }
+
+            Ok::<_, eyre::Report>(())
+        });
+
+        sources.await?;
+        transforms.await?;
+        filters.await?;
+
+        Ok(())
+    }
+}
+
+pub fn all_scripts() -> Vec<PathBuf> {
+    read_dir("scripts/").expect("could not read scripts directory")
+        .collect::<Result<Vec<_>, _>>().expect("could not collect dir entries")
+        .into_iter()
+        .map(|entry| entry.path())
+        .filter(|path| utils::is_script_whitelisted(path))
+        .collect()
+}
+
+pub type Queries = HashMap<String, String>;
+pub async fn spawn_all_scripts() -> Result<Pipeline> {
+    Ok(Pipeline {
+        scripts: all_scripts()
+            .into_iter()
+            .map(|path| script::spawn_server(path))
+            .collect::<Result<Vec<Arc<script::Script>>>>()?
+    })
 }

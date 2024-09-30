@@ -2,7 +2,7 @@ use fluent_uri::UriRef;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Metadata {
+pub struct Media {
     pub title: String,
     #[serde(default)]
     pub uri: UriRef<String>,
@@ -21,4 +21,23 @@ pub struct Metadata {
 pub enum Extra {
     Image { width: u64, height: u64 },
     PDF { author: String, summary: String }
+}
+
+pub const FILTER_METHOD: &str = "media/filter";
+pub const TRANSFORM_METHOD: &str = "media/transform";
+pub const GENERATE_METHOD: &str = "media/generate";
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct FilterResponse {
+    pub included: bool
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct GenerateRequest {
+    pub batch_size: u32
+}
+#[derive(Debug, Deserialize, Clone)]
+pub struct GenerateResponse {
+    pub media: Vec<Media>,
+    pub finished: bool
 }

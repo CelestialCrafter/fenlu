@@ -10,10 +10,6 @@ Window {
     width: 640
     id: window
 
-    FenluMedia {
-        id: fenluMedia
-    }
-
     ListModel {
         id: mediaModel
     }
@@ -27,7 +23,6 @@ Window {
             Layout.preferredHeight: parent.height * 0.1
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignTop
-            media: fenluMedia
         }
 
         Label {
@@ -38,12 +33,11 @@ Window {
             visible: mediaModel.count === 0
         }
 
-        Media {
+        MediaList {
             z: 1
             Layout.fillHeight: true
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignBottom
-            media: fenluMedia
             visible: mediaModel.count > 0
         }
     }

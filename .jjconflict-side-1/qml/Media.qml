@@ -1,46 +1,38 @@
-import QtQuick.Controls 2.12
 import QtQuick 2.12
-import fenlu 1.0
+import QtQuick.Controls 2.12
+import fenlu
 
-Item {
-    required property FenluMedia media
+Image {
+    required property var data
 
-    Connections {
-        target: media
-        property var previousTotal: 0
+    //MediaDetails {
+    //    id: popup
+    //    data: data
+    //}
 
-        function onTotalChanged() {
-            for (let i = previousTotal; i < media.total; i++) {
-                mediaModel.append({ uri: media.item(i) });
-            }
+    asynchronous: true
+    fillMode: Image.PreserveAspectCrop
+    source: data.uri
 
-            previousTotal = media.total;
+    Label {
+        horizontalAlignment: Text.AlignHCenter
+        anchors.top: parent ? parent.top : undefined;
+        width: parent ? parent.width : 0;
+        topPadding: 5
+        bottomPadding: 5
+
+        text: data ? data.title : ""
+        color: "white"
+
+        background: Rectangle {
+            opacity: 0.7
+            color: "black"
         }
     }
 
-    CustomScrollGridView {
-        property var columns: 5
-
-        anchors.fill: parent
-        id: grid
-
-        cellWidth: grid.width / columns
-        cellHeight: grid.cellWidth
-        model: mediaModel
-        cacheBuffer: grid.cellHeight * columns
-
-        delegate: Image {
-            required property url uri
-
-            width: grid.cellWidth
-            height: grid.cellHeight
-            asynchronous: true
-            fillMode: Image.PreserveAspectCrop
-            source: uri
-            MouseArea {
-                anchors.fill: parent
-                onClicked: media.open(uri);
-            }
-        }
+    MouseArea {
+        anchors.fill: parent ? parent : undefined;
+        //onClicked: popup.open();
+        onDoubleClicked: FenluMedia.open(data.uri);
     }
 }

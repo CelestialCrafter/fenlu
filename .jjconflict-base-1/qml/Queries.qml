@@ -4,12 +4,10 @@ import QtQuick.Layouts 2.12
 import fenlu 1.0
 
 Item {
-    required property FenluMedia media
-
     function runPipeline() {
-        media.setTotal(0);
+        FenluMedia.setTotal(0);
         mediaModel.clear();
-        media.runPipeline();
+        FenluMedia.runPipeline();
     }
 
     FenluScripts {
@@ -40,7 +38,6 @@ Item {
                     anchors.left: label.right
                     width: parent.width * 0.6
 
-                    onTextEdited: media.setQuery(script, input.text);
                     onAccepted: runPipeline()
                 }
             }

@@ -27,7 +27,7 @@ use std::pin::Pin;
 use cxx_qt_lib::QString;
 use qobject::FenluScripts;
 
-use crate::{pipeline::{sources, transforms}, utils};
+use crate::utils;
 
 impl qobject::FenluScripts {
     pub fn item(self: &FenluScripts, index: usize) -> QString {
@@ -46,13 +46,11 @@ pub struct Scripts {
 
 impl cxx_qt::Initialize for FenluScripts {
     fn initialize(mut self: Pin<&mut Self>) {
-        let scripts: Vec<QString> = sources::scripts()
-                .chain(transforms::scripts())
-                .map(|path| path.expect("could not read path"))
-                .filter(|path| utils::is_script_whitelisted(path))
-                .map(|path| utils::path_to_name(&path))
-                .map(|name| QString::from(&name))
-                .collect();
+        let scripts: Vec<QString> = utils::all_scripts()
+            .into_iter()
+            .map(|path| utils::path_to_name(&path))
+            .map(|name| QString::from(&name))
+            .collect();
 
         let mut self_mut = self.as_mut().cxx_qt_ffi_rust_mut();
         self_mut.total = scripts.len();
