@@ -2,12 +2,11 @@ use std::{io::{BufRead, BufReader, Write}, path::PathBuf, process::{Command, Std
 
 use eyre::Result;
 use tokio::task;
-use crate::{metadata::Metadata, utils};
-use glob::{glob, GlobError};
+use crate::{protocol::media::Media, utils};
 
 use super::Queries;
 
-fn create_transform(path: PathBuf, input: Receiver<Metadata>, query: String) -> Receiver<Metadata> {
+fn create_transform(path: PathBuf, input: Receiver<Media>, query: String) -> Receiver<Media> {
     let (tx, rx) = channel();
 
     let path = path.canonicalize().expect("path should be canonicalizable");
@@ -39,7 +38,7 @@ fn create_transform(path: PathBuf, input: Receiver<Metadata>, query: String) -> 
 
         for line in reader.lines() {
             let line = line.expect("should be able to read line");
-            let mut media: Metadata = serde_json::from_str(line.as_str()).expect("line should decode to Metadata");
+            let mut media: Media = serde_json::from_str(line.as_str()).expect("line should decode to Metadata");
             media.history.push(name.clone());
             tx.send(media).expect("reciever should not drop");
         }
@@ -53,9 +52,9 @@ pub fn scripts() -> impl Iterator<Item = std::result::Result<PathBuf, GlobError>
 }
 
 pub async fn apply_transforms(
-    input: Receiver<Metadata>,
+    input: Receiver<Media>,
     queries: Queries
-) -> Result<Receiver<Metadata>> {
+) -> Result<Receiver<Media>> {
     let (tx, rx) = channel();
 
     let data: Vec<(PathBuf, String)> = scripts()
