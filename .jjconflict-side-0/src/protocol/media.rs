@@ -27,6 +27,10 @@ pub const FILTER_METHOD: &str = "media/filter";
 pub const TRANSFORM_METHOD: &str = "media/transform";
 pub const GENERATE_METHOD: &str = "media/generate";
 
+pub type TransformRequest = Media;
+pub type TransformResponse = Media;
+
+pub type FilterRequest = Media;
 #[derive(Debug, Deserialize, Clone)]
 pub struct FilterResponse {
     pub included: bool

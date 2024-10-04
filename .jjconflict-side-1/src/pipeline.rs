@@ -1,9 +1,10 @@
 use std::{collections::HashMap, fs::{read_dir, File}, io::ErrorKind, path::PathBuf, sync::Arc};
 
 use eyre::Result;
+use futures::executor::block_on;
 use crate::{protocol::{media, messages::Request, query}, script, utils};
 use sqlx::SqliteConnection;
-use tokio::{sync::mpsc, task};
+use tokio::{join, sync::mpsc, task::{self, JoinSet}};
 
 pub const DB_PATH: &str = "fenlu.db";
 
@@ -31,12 +32,23 @@ async fn create_media_table(conn: &mut SqliteConnection) -> Result<()> {
     Ok(())
 }
 
+pub fn append_history(path: PathBuf, media: &mut media::Media) {
+    let name = utils::path_to_name(&path);
+    media.history.push(name);
+}
+
 pub struct Pipeline {
     pub scripts: Vec<Arc<script::Script>>,
 }
 
+impl Default for Pipeline {
+    fn default() -> Self {
+        block_on(spawn_all_scripts()).expect("could not spawn pipeline scripts")
+    }
+}
+
 impl Pipeline {
-    pub async fn set_queries(&self, queries: Queries) -> Result<()> {
+    pub async fn set_queries(&self, queries: &Queries) -> Result<()> {
         for script in self.scripts.clone() {
             if !script.capabilities.query.query {
                 continue;
@@ -54,13 +66,13 @@ impl Pipeline {
                 params: serde_json::to_value(query::QueryRequest {
                    query: script_query 
                 })?
-            });
+            }).await;
         }
 
         Ok(())
     }
 
-    pub async fn run(&self, buffer_size: usize, output: mpsc::Sender<media::Media>) -> Result<()> {
+    pub async fn run(&self, batch_size: usize, output: mpsc::Sender<media::Media>) -> Result<()> {
         // setup
         let mut source_scripts = vec![];
         let mut transform_scripts = vec![];
@@ -76,8 +88,8 @@ impl Pipeline {
             }
         }
 
-        let (tx_s, mut rx_s) = mpsc::channel(buffer_size);
-        let (tx_t, mut rx_t) = mpsc::channel(buffer_size);
+        let (tx_s, mut rx_s) = mpsc::channel(batch_size);
+        let (tx_t, mut rx_t) = mpsc::channel(batch_size);
 
         let sources = task::spawn(async move {
             for source in source_scripts {
@@ -86,11 +98,13 @@ impl Pipeline {
                         id: utils::generate_id(),
                         method: media::GENERATE_METHOD.to_string(),
                         params: serde_json::to_value(media::GenerateRequest {
-                            batch_size: buffer_size.clone() as u32
+                            batch_size: batch_size.clone() as u32
                         })?
-                    }).await?.result()?)?;
+                    }).await.result()?)?;
+                    panic!("i miss umi");
 
-                    for media in response.media {
+                    for mut media in response.media {
+                        append_history(source.path.clone(), &mut media);
                         tx_s.send(media).await?;
                     }
 
@@ -111,7 +125,8 @@ impl Pipeline {
                         id: utils::generate_id(),
                         method: media::TRANSFORM_METHOD.to_string(),
                         params: serde_json::to_value(media)?
-                    }).await?.result()?)?;
+                    }).await.result()?)?;
+                    append_history(transform.path.clone(), &mut media);
                 }
 
                 tx_t.send(media).await?;
@@ -121,7 +136,7 @@ impl Pipeline {
 
         // filters
         let filters = task::spawn(async move {
-            while let Some(media) = rx_t.recv().await {
+            while let Some(mut media) = rx_t.recv().await {
                 let mut included = true;
                 let value = serde_json::to_value(media.clone())?;
 
@@ -130,12 +145,14 @@ impl Pipeline {
                         id: utils::generate_id(),
                         method: media::FILTER_METHOD.to_string(),
                         params: value.clone()
-                    }).await?.result()?)?;
+                    }).await.result()?)?;
 
                     if !response.included {
                         included = false;
                         break
                     }
+
+                    append_history(filter.path.clone(), &mut media);
                 }
 
                 if included {
@@ -146,9 +163,10 @@ impl Pipeline {
             Ok::<_, eyre::Report>(())
         });
 
-        sources.await?;
-        transforms.await?;
-        filters.await?;
+        let joined = join!(sources, transforms, filters);
+        for result in vec![joined.0, joined.1, joined.2] {
+            result??;
+        }
 
         Ok(())
     }
@@ -165,10 +183,20 @@ pub fn all_scripts() -> Vec<PathBuf> {
 
 pub type Queries = HashMap<String, String>;
 pub async fn spawn_all_scripts() -> Result<Pipeline> {
-    Ok(Pipeline {
-        scripts: all_scripts()
-            .into_iter()
-            .map(|path| script::spawn_server(path))
-            .collect::<Result<Vec<Arc<script::Script>>>>()?
-    })
+    let mut set = JoinSet::new();
+
+    let script_paths = all_scripts();
+    let mut scripts = Vec::with_capacity(script_paths.len());
+
+    let servers = script_paths.into_iter().map(|path| script::spawn_server(path));
+
+    for future in servers {
+        set.spawn(future);
+    }
+
+    while let Some(script) = set.join_next().await {
+        scripts.push(script??);
+    }
+
+    Ok(Pipeline { scripts })
 }

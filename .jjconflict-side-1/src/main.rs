@@ -7,7 +7,8 @@ pub mod script;
 
 use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QUrl};
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let mut app = QGuiApplication::new();
     let mut engine = QQmlApplicationEngine::new();
 

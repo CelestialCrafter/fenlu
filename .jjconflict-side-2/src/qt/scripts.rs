@@ -27,7 +27,7 @@ use std::pin::Pin;
 use cxx_qt_lib::QString;
 use qobject::FenluScripts;
 
-use crate::utils;
+use crate::{pipeline::all_scripts, utils::path_to_name};
 
 impl qobject::FenluScripts {
     pub fn item(self: &FenluScripts, index: usize) -> QString {
@@ -46,9 +46,9 @@ pub struct Scripts {
 
 impl cxx_qt::Initialize for FenluScripts {
     fn initialize(mut self: Pin<&mut Self>) {
-        let scripts: Vec<QString> = utils::all_scripts()
+        let scripts: Vec<QString> = all_scripts()
             .into_iter()
-            .map(|path| utils::path_to_name(&path))
+            .map(|path| path_to_name(&path))
             .map(|name| QString::from(&name))
             .collect();
 

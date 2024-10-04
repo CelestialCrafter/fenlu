@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import sys
 import json
 import tomllib
 from urllib.parse import quote
@@ -9,19 +10,70 @@ from PIL import Image, UnidentifiedImageError
 with open('config-source-directory.toml', 'rb') as file:
     config = tomllib.load(file)
 
-for root, _, files in os.walk(os.path.expanduser(config['path'])):
-    for file in files:
-        path = os.path.join(root, file)
+files = [os.path.join(root, file) for root, _, files in os.walk(os.path.expanduser(config['path'])) for file in files]
 
-        try:
-            image = Image.open(path)
-        except UnidentifiedImageError:
-            continue
-    
-        print(json.dumps({
-            'title': file,
+def handle_generate(params):
+    global files
+
+    batch_size = params['batch_size']
+
+    batch = files[:batch_size]
+    files = files[batch_size:]
+
+    media = []
+    for path in batch:
+        image = Image.open(path)
+
+        media.append({
+            'title': os.path.basename(path),
             'uri': 'file://' + quote(path),
             'height': image.width,
             'width': image.height,
             'type': 'Image'
-        }))
+        })
+
+    return {
+        'media': media,
+        'finished': len(files) < 1
+    }
+
+def handle_capabilities():
+    return {
+        'media': {
+            'source': True
+        },
+        'query': {
+            'query': True
+        }
+    }
+
+for line in sys.stdin:
+    # strip off EOF
+    line = line.rstrip()
+
+    request = json.loads(line)
+    params = request['params']
+    id = request['id']
+
+    result = {}
+    error = None
+
+    match request['method']:
+        case 'capabilities/capabilities':
+            result = handle_capabilities()
+        case 'media/generate':
+            try:
+                result = handle_generate(params)
+            except UnidentifiedImageError as e:
+                result = None
+                error = e
+        case _:
+            result = None
+            error = "unknown method"
+
+    print(json.dumps({
+        'id': id,
+        'result': result,
+        'error': error
+    }))
+

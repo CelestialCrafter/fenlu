@@ -1,5 +1,3 @@
-pub mod child_guard;
-
 use std::path::PathBuf;
 
 use uuid::Uuid;

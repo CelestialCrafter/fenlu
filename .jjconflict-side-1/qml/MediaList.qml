@@ -47,10 +47,9 @@ Item {
             }
 
             ColumnLayout {
-                Layout.fillHeight: true
-                Layout.fillWidth: true
                 ListView {
-                    anchors.fill: parent
+                    Layout.fillHeight: true
+                    Layout.fillWidth: true
                     id: history
                     model: ListModel {}
                     delegate: Text {
