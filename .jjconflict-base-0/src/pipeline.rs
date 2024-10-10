@@ -1,7 +1,8 @@
 use std::{collections::HashMap, fs::{read_dir, File}, io::ErrorKind, path::PathBuf, sync::Arc};
 
-use eyre::Result;
+use eyre::{Result, Report};
 use futures::executor::block_on;
+use tracing::{debug, debug_span, Instrument};
 use crate::{protocol::{media, messages::Request, query}, script, utils};
 use sqlx::SqliteConnection;
 use tokio::{join, sync::mpsc, task::{self, JoinSet}};
@@ -94,6 +95,9 @@ impl Pipeline {
         let sources = task::spawn(async move {
             for source in source_scripts {
                 loop {
+                    let name = utils::path_to_name(&source.path);
+                    let _ = debug_span!("requesting filter", name = name).enter();
+
                     let response: media::GenerateResponse = serde_json::from_value(source.request(Request {
                         id: utils::generate_id(),
                         method: media::GENERATE_METHOD.to_string(),
@@ -101,7 +105,6 @@ impl Pipeline {
                             batch_size: batch_size.clone() as u32
                         })?
                     }).await.result()?)?;
-                    panic!("i miss umi");
 
                     for mut media in response.media {
                         append_history(source.path.clone(), &mut media);
@@ -114,13 +117,16 @@ impl Pipeline {
                 }
             }
 
-            Ok::<_, eyre::Report>(())
+            Ok::<_, Report>(())
         });
 
         // transforms
         let transforms = task::spawn(async move {
             while let Some(mut media) = rx_s.recv().await {
                 for transform in transform_scripts.clone() {
+                    let name = utils::path_to_name(&transform.path);
+                    let _ = debug_span!("requesting transform", name = name).enter();
+
                     media = serde_json::from_value(transform.request(Request {
                         id: utils::generate_id(),
                         method: media::TRANSFORM_METHOD.to_string(),
@@ -131,7 +137,7 @@ impl Pipeline {
 
                 tx_t.send(media).await?;
             }
-            Ok::<_, eyre::Report>(())
+            Ok::<_, Report>(())
         });
 
         // filters
@@ -141,6 +147,9 @@ impl Pipeline {
                 let value = serde_json::to_value(media.clone())?;
 
                 for filter in filter_scripts.clone() {
+                    let name = utils::path_to_name(&filter.path);
+                    let _ = debug_span!("requesting filter", name = name).enter();
+
                     let response: media::FilterResponse = serde_json::from_value(filter.request(Request {
                         id: utils::generate_id(),
                         method: media::FILTER_METHOD.to_string(),
@@ -160,7 +169,7 @@ impl Pipeline {
                 }
             }
 
-            Ok::<_, eyre::Report>(())
+            Ok::<_, Report>(())
         });
 
         let joined = join!(sources, transforms, filters);

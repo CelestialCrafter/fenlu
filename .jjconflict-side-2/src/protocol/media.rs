@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Media {
     pub title: String,
-    #[serde(default)]
     pub uri: UriRef<String>,
     #[serde(default)]
     pub extra_source: String,
@@ -45,3 +44,4 @@ pub struct GenerateResponse {
     pub media: Vec<Media>,
     pub finished: bool
 }
+

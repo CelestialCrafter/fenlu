@@ -37,6 +37,7 @@ use cxx_qt_lib::{QString, QUrl};
 use futures::executor::block_on;
 use qobject::{FenluMedia, FenluMediaCxxQtThread};
 use tokio::{sync::mpsc, task};
+use tracing::{debug, info};
 
 use crate::{config::CONFIG, pipeline::{Pipeline, Queries}};
 
@@ -50,7 +51,7 @@ pub struct Media {
 
 fn render(thread: FenluMediaCxxQtThread, items: Vec<QString>) {
     thread.queue(move |mut media| {
-        println!("rendering media");
+        debug!("rendering media");
         let amount = items.len();
         media.as_mut().cxx_qt_ffi_rust_mut().items = items;
         media.as_mut().set_total(amount);
@@ -91,7 +92,7 @@ impl qobject::FenluMedia {
                 }).expect("could not queue pipeline run");
 
                 while let Some(media) = rx.recv().await {
-                    println!("media recieved: {:?}", media.uri.to_string());
+                    info!("media recieved: {:?}", media.uri.to_string());
                     let media = QString::from(&serde_json::to_string(&media).expect("media should encode to json"));
                     items.push(media);
 
