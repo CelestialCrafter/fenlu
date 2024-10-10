@@ -2,7 +2,7 @@ use std::{collections::HashMap, fs::{read_dir, File}, io::ErrorKind, path::PathB
 
 use eyre::{Result, Report};
 use futures::executor::block_on;
-use tracing::{debug, debug_span, Instrument};
+use tracing::debug_span;
 use crate::{protocol::{media, messages::Request, query}, script, utils};
 use sqlx::SqliteConnection;
 use tokio::{join, sync::mpsc, task::{self, JoinSet}};

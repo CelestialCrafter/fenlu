@@ -6,7 +6,6 @@ pub mod utils;
 pub mod script;
 
 use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QUrl};
-use tracing::info;
 
 #[tokio::main]
 async fn main() {

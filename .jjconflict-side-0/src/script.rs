@@ -94,7 +94,7 @@ pub async fn spawn_server(path: PathBuf) -> Result<Arc<Script>> {
         }.instrument(info_span!("response handler", name = name)))
     };
 
-    // take incomming responses
+    // take incoming responses
     // remove them from pending requests
     // send them to the pending request tx
     let response_handle = {
