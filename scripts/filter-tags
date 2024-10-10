@@ -41,15 +41,15 @@ def handle_transform(params):
 
     return { 'included': included }
 
-# capabilities
-print(json.dumps({
-    'media': {
-        'transform': True
-    },
-    'query': {
-        'query': True
+def handle_capabilities():
+    return {
+        'media': {
+            'transform': True
+        },
+        'query': {
+            'query': True
+        }
     }
-}))
 
 for line in sys.stdin:
     # strip off EOF
@@ -63,6 +63,8 @@ for line in sys.stdin:
     error = None
 
     match request['method']:
+        case 'capabilities/capabilities':
+            result = handle_capabilities()
         case 'query/query':
             result = handle_query(params)
         case 'media/transform':

@@ -58,18 +58,17 @@ for line in sys.stdin:
     result = {}
     error = None
 
-    match request['method']:
-        case 'capabilities/capabilities':
-            result = handle_capabilities()
-        case 'media/generate':
-            try:
-                result = handle_generate(params)
-            except UnidentifiedImageError as e:
+    try:
+        match request['method']:
+            case 'capabilities/capabilities':
+                result = handle_capabilities()
+            case 'media/generate':
+                    result = handle_generate(params)
+            case _:
+                raise Exception("unknown method")
+    except Exception as e:
                 result = None
-                error = e
-        case _:
-            result = None
-            error = "unknown method"
+                error = str(e)
 
     print(json.dumps({
         'id': id,

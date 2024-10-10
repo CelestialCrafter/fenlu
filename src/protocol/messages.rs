@@ -3,14 +3,14 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 pub type Id = String;
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Request {
     pub id: Id,
     pub method: String,
     pub params: Value,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Response {
     pub id: Id,
     pub result: Option<Value>,
