@@ -1,31 +1,46 @@
-use std::{collections::HashMap, io::{BufRead, BufReader, BufWriter, Write}, path::PathBuf, process::{Command, Stdio}, sync::Arc};
+use std::{
+    collections::HashMap,
+    io::{BufRead, BufReader, BufWriter, Write},
+    path::PathBuf,
+    process::{Command, Stdio},
+    sync::Arc,
+};
 
 use eyre::{eyre, OptionExt, Report, Result};
 use futures::future::join_all;
-use tokio::{sync::{mpsc, oneshot, Mutex}, task};
+use tokio::{
+    sync::{mpsc, oneshot, Mutex},
+    task,
+};
 use tracing::{debug, error, info_span, Instrument};
 
-use crate::{protocol::{capabilities::{self, Capabilities}, messages::{Id, Request, Response}}, utils::{self, generate_id}};
+use crate::{
+    protocol::{
+        capabilities::{self, Capabilities},
+        messages::{Id, Request, Response},
+    },
+    utils::{self, generate_id},
+};
 
 #[derive(Debug)]
 pub struct Script {
     pub path: PathBuf,
     pub capabilities: Capabilities,
     request_tx: mpsc::Sender<Request>,
-    pending_requests: Mutex<HashMap<Id, oneshot::Sender<Response>>>
+    pending_requests: Mutex<HashMap<Id, Box<oneshot::Sender<Response>>>>,
 }
 
 impl Script {
     pub async fn request(&self, req: Request) -> Response {
         let (tx, rx) = oneshot::channel();
         let mut pending = self.pending_requests.lock().await;
-        if let Some(_) = pending.insert(req.id.clone(), tx) {
-            panic!("request was already in pending map");
+        if let Some(_) = pending.insert(req.id.clone(), Box::new(tx)) {
+            panic!("request was already pending");
         }
         drop(pending);
 
-        self.request_tx.send(req).await.expect("reciever was dropped");
-        rx.await.expect("sender was dropped")
+        self.request_tx.send(req).await.unwrap();
+        rx.await.unwrap()
     }
 }
 
@@ -50,7 +65,7 @@ pub async fn spawn_server(path: PathBuf) -> Result<Arc<Script>> {
         path: path.clone(),
         capabilities: Capabilities::default(),
         request_tx,
-        pending_requests: Mutex::new(HashMap::new())
+        pending_requests: Mutex::new(HashMap::new()),
     };
 
     // manually request capabilities before the script is wrapped in an Arc and therefore immutable
@@ -58,7 +73,7 @@ pub async fn spawn_server(path: PathBuf) -> Result<Arc<Script>> {
         let request = &Request {
             id: generate_id(),
             method: capabilities::CAPABILITIES_METHOD.to_string(),
-            params: serde_json::to_value(capabilities::CapabilitiesRequest {})?
+            params: serde_json::to_value(capabilities::CapabilitiesRequest {})?,
         };
 
         let mut encoded = serde_json::to_vec(request)?;
@@ -71,7 +86,10 @@ pub async fn spawn_server(path: PathBuf) -> Result<Arc<Script>> {
         stdout.read_line(&mut response)?;
         let response: Response = serde_json::from_str(&response)?;
 
-        assert!(request.id == response.id, "initial response id was not the same as capabilities request id");
+        assert!(
+            request.id == response.id,
+            "initial response id was not the same as capabilities request id"
+        );
         script.capabilities = serde_json::from_value(response.result()?)?;
     }
 
@@ -81,17 +99,20 @@ pub async fn spawn_server(path: PathBuf) -> Result<Arc<Script>> {
     let request_handle = {
         let name = utils::path_to_name(&path);
 
-        task::spawn(async move {
-            while let Some(request) = request_rx.recv().await {
-                let mut encoded = serde_json::to_vec(&request)?;
-                encoded.push(b'\n');
-                stdin.write_all(&encoded)?;
-                stdin.flush()?;
-                debug!(id = ?request.id, method = ?request.method, "initiated request");
-            }
+        task::spawn(
+            async move {
+                while let Some(request) = request_rx.recv().await {
+                    let mut encoded = serde_json::to_vec(&request)?;
+                    encoded.push(b'\n');
+                    stdin.write_all(&encoded)?;
+                    stdin.flush()?;
+                    debug!(id = ?request.id, method = ?request.method, "initiated request");
+                }
 
-            Ok::<_, Report>(())
-        }.instrument(info_span!("response handler", name = name)))
+                Ok::<_, Report>(())
+            }
+            .instrument(info_span!("response handler", name = name)),
+        )
     };
 
     // take incoming responses
@@ -101,20 +122,26 @@ pub async fn spawn_server(path: PathBuf) -> Result<Arc<Script>> {
         let script = script.clone();
         let name = utils::path_to_name(&path);
 
-        task::spawn(async move {
-            for line in stdout.lines() {
-                let response: Response = serde_json::from_str(line?.as_str())?;
-                let id = response.id.clone();
-                let mut pending = script.pending_requests.lock().await;
+        task::spawn(
+            async move {
+                for line in stdout.lines() {
+                    let response: Response = serde_json::from_str(line?.as_str())?;
+                    let id = response.id.clone();
+                    let mut pending = script.pending_requests.lock().await;
 
-                if let Some(tx) = pending.remove(&response.id) {
-                    tx.send(response.clone()).map_err(|_| eyre!("receiver was dropped"))?;
+                    assert!(
+                        pending.contains_key(&response.id),
+                        "recieved response for non-pending request"
+                    );
+                    let tx = pending.remove(&response.id).unwrap();
+                    tx.send(response.clone()).unwrap();
                     debug!(id = ?id, "completed request");
                 }
-            }
 
-            Ok::<_, Report>(())
-        }.instrument(info_span!("response handler", name = name)))
+                Ok::<_, Report>(())
+            }
+            .instrument(info_span!("response handler", name = name)),
+        )
     };
 
     task::spawn(async {
@@ -126,11 +153,10 @@ pub async fn spawn_server(path: PathBuf) -> Result<Arc<Script>> {
 
             Ok(())
         })() {
-            Ok(_) => {},
-            Err(err) => error!("script errored: {}", err)
+            Ok(_) => {}
+            Err(err) => error!("script errored: {}", err),
         }
     });
 
     Ok(script)
 }
-

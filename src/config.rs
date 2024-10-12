@@ -11,7 +11,7 @@ const CONFIG_PATH: &str = "config.toml";
 pub enum PipelineMode {
     Generate,
     GenerateSave,
-    Load
+    Load,
 }
 
 impl Default for PipelineMode {
@@ -28,6 +28,8 @@ pub struct Config {
     pub whitelisted_scripts: Vec<String>,
     #[serde(default = "default_pipeline_mode")]
     pub pipeline_mode: PipelineMode,
+    #[serde(default = "default_batch_size")]
+    pub batch_size: usize,
 }
 
 fn default_media_update_interval() -> u128 {
@@ -40,6 +42,10 @@ fn default_pipeline_mode() -> PipelineMode {
     } else {
         PipelineMode::GenerateSave
     }
+}
+
+fn default_batch_size() -> usize {
+    12
 }
 
 pub static CONFIG: Lazy<Config> = Lazy::new(|| {
