@@ -27,14 +27,14 @@ pub struct Script {
     pub path: PathBuf,
     pub capabilities: Capabilities,
     request_tx: mpsc::Sender<Request>,
-    pending_requests: Mutex<HashMap<Id, Box<oneshot::Sender<Response>>>>,
+    pending_requests: Mutex<HashMap<Id, oneshot::Sender<Response>>>,
 }
 
 impl Script {
     pub async fn request(&self, req: Request) -> Response {
         let (tx, rx) = oneshot::channel();
         let mut pending = self.pending_requests.lock().await;
-        if let Some(_) = pending.insert(req.id.clone(), Box::new(tx)) {
+        if let Some(_) = pending.insert(req.id.clone(), tx) {
             panic!("request was already pending");
         }
         drop(pending);

@@ -5,7 +5,7 @@ use iced::{
     Subscription, Task,
 };
 use tokio::{sync::mpsc, task};
-use tracing::{debug, info, instrument};
+use tracing::{info, instrument};
 
 use crate::{config::CONFIG, pipeline::Pipeline, protocol::media::Media};
 
