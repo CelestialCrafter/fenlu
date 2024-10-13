@@ -10,9 +10,9 @@ use std::{
 use eyre::{OptionExt, Report, Result};
 use futures::future::join_all;
 use tokio::{
-    sync::{mpsc, oneshot, Mutex},
+    sync::{mpsc, Mutex},
     task,
-    time::{sleep, Sleep},
+    time::sleep,
 };
 use tracing::{debug, error, info_span, Instrument};
 
@@ -36,7 +36,7 @@ impl Script {
     pub async fn request(&self, req: Request) -> Response {
         let id = req.id.clone();
         self.request_tx.send(req).await.unwrap();
-        sleep(Duration::from_secs(2)).await;
+        sleep(Duration::from_secs(1)).await;
         let mut pending = self.pending_requests.lock().await;
         pending.remove(id.as_str()).unwrap().unwrap()
     }

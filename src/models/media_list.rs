@@ -24,7 +24,6 @@ pub struct MediaList {
 
 pub async fn image_handle_from_uri(uri: UriRef<String>) -> Result<image::Handle> {
     let cache_read = IMAGE_CACHE.read().await;
-    println!("{:?}", cache_read);
 
     let handle = match cache_read.get(&uri.to_string()) {
         Some(h) => h.clone(),
@@ -52,8 +51,12 @@ impl MediaList {
         self.media.push((media, handle));
     }
     pub fn view(&self) -> Element<main::Message> {
-        Row::with_children(self.media.clone().into_iter().map(|(media, handle)| {
-            column![text(media.title), Image::new(handle).width(128).height(128)].into()
+        Row::with_children(self.media.iter().map(|(media, handle)| {
+            column![
+                text(media.title.clone()),
+                Image::new(handle).width(128).height(128)
+            ]
+            .into()
         }))
         .wrap()
         .into()

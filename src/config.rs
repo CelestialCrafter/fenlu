@@ -1,6 +1,5 @@
-use std::{fs::read_to_string, path::Path};
+use std::{fs::read_to_string, path::Path, sync::LazyLock};
 
-use once_cell::sync::Lazy;
 use serde::Deserialize;
 
 use crate::pipeline::DB_PATH;
@@ -48,7 +47,7 @@ fn default_batch_size() -> usize {
     12
 }
 
-pub static CONFIG: Lazy<Config> = Lazy::new(|| {
+pub static CONFIG: LazyLock<Config> = LazyLock::new(|| {
     let data = read_to_string(CONFIG_PATH).expect("could not read config file");
     toml::from_str::<Config>(data.as_str()).expect("could not parse config file")
 });
