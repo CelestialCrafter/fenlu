@@ -29,7 +29,7 @@ pub struct Config {
     #[serde(default = "default_pipeline_mode")]
     pub pipeline_mode: PipelineMode,
     #[serde(default = "default_batch_size")]
-    pub batch_size: usize,
+    pub buffer_size: usize,
 }
 
 fn default_media_update_interval() -> u128 {

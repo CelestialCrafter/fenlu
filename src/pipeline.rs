@@ -48,13 +48,13 @@ pub fn append_history(path: PathBuf, media: &mut media::Media) {
     media.history.push(name);
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Pipeline {
     pub scripts: Vec<Arc<script::Script>>,
 }
 
 impl Pipeline {
-    pub async fn new() -> Result<Self> {
+    pub async fn populate(&mut self) -> Result<()> {
         let mut set = JoinSet::new();
 
         let script_paths = all_scripts();
@@ -72,7 +72,9 @@ impl Pipeline {
             scripts.push(script??);
         }
 
-        Ok(Pipeline { scripts })
+        self.scripts = scripts;
+
+        Ok(())
     }
 
     pub async fn set_queries(&self, queries: &HashMap<String, String>) -> Result<()> {

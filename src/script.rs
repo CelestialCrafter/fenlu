@@ -6,7 +6,7 @@ use std::{
     sync::Arc,
 };
 
-use eyre::{eyre, OptionExt, Report, Result};
+use eyre::{OptionExt, Report, Result};
 use futures::future::join_all;
 use tokio::{
     sync::{mpsc, oneshot, Mutex},
