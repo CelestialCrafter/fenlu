@@ -45,7 +45,7 @@ fn start_pipeline() -> impl Stream<Item = Message> {
             let mut message_tx = message_tx.clone();
             task::spawn(async move {
                 while let Some(media) = media_rx.recv().await {
-                    let handle = image_handle_from_uri(media.uri.to_string()).await?;
+                    let handle = image_handle_from_uri(media.uri.clone()).await?;
                     message_tx.send(Message::NewMedia((media, handle))).await?;
                 }
 

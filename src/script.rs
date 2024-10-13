@@ -4,6 +4,7 @@ use std::{
     path::PathBuf,
     process::{Command, Stdio},
     sync::Arc,
+    time::Duration,
 };
 
 use eyre::{OptionExt, Report, Result};
@@ -11,6 +12,7 @@ use futures::future::join_all;
 use tokio::{
     sync::{mpsc, oneshot, Mutex},
     task,
+    time::{sleep, Sleep},
 };
 use tracing::{debug, error, info_span, Instrument};
 
@@ -27,20 +29,16 @@ pub struct Script {
     pub path: PathBuf,
     pub capabilities: Capabilities,
     request_tx: mpsc::Sender<Request>,
-    pending_requests: Mutex<HashMap<Id, oneshot::Sender<Response>>>,
+    pending_requests: Mutex<HashMap<Id, Option<Response>>>,
 }
 
 impl Script {
     pub async fn request(&self, req: Request) -> Response {
-        let (tx, rx) = oneshot::channel();
-        let mut pending = self.pending_requests.lock().await;
-        if let Some(_) = pending.insert(req.id.clone(), tx) {
-            panic!("request was already pending");
-        }
-        drop(pending);
-
+        let id = req.id.clone();
         self.request_tx.send(req).await.unwrap();
-        rx.await.unwrap()
+        sleep(Duration::from_secs(2)).await;
+        let mut pending = self.pending_requests.lock().await;
+        pending.remove(id.as_str()).unwrap().unwrap()
     }
 }
 
@@ -129,12 +127,7 @@ pub async fn spawn_server(path: PathBuf) -> Result<Arc<Script>> {
                     let id = response.id.clone();
                     let mut pending = script.pending_requests.lock().await;
 
-                    assert!(
-                        pending.contains_key(&response.id),
-                        "recieved response for non-pending request"
-                    );
-                    let tx = pending.remove(&response.id).unwrap();
-                    tx.send(response.clone()).unwrap();
+                    pending.insert(id.clone(), Some(response));
                     debug!(id = ?id, "completed request");
                 }
 

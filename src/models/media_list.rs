@@ -1,6 +1,7 @@
 use std::{collections::HashMap, sync::LazyLock};
 
 use eyre::Result;
+use fluent_uri::{component::Scheme, UriRef};
 use iced::{
     widget::{column, image, text, Image, Row},
     Element,
@@ -11,6 +12,8 @@ use crate::protocol::media::Media;
 
 use super::main;
 
+const HTTP_SCHEME: Option<&Scheme> = Scheme::new("http");
+
 static IMAGE_CACHE: LazyLock<RwLock<HashMap<String, image::Handle>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
@@ -19,19 +22,23 @@ pub struct MediaList {
     media: Vec<(Media, image::Handle)>,
 }
 
-pub async fn image_handle_from_uri(uri: String) -> Result<image::Handle> {
+pub async fn image_handle_from_uri(uri: UriRef<String>) -> Result<image::Handle> {
     let cache_read = IMAGE_CACHE.read().await;
     println!("{:?}", cache_read);
 
-    let handle = match cache_read.get(&uri) {
+    let handle = match cache_read.get(&uri.to_string()) {
         Some(h) => h.clone(),
         None => {
             drop(cache_read);
-            let bytes = reqwest::get(uri.clone()).await?.bytes().await?;
-            let handle = image::Handle::from_bytes(bytes);
+            let handle = if HTTP_SCHEME == uri.scheme() {
+                let bytes = reqwest::get(uri.to_string()).await?.bytes().await?;
+                image::Handle::from_bytes(bytes)
+            } else {
+                image::Handle::from_path(uri.path().to_string())
+            };
 
             let mut cache = IMAGE_CACHE.write().await;
-            cache.insert(uri, handle.clone());
+            cache.insert(uri.to_string(), handle.clone());
 
             handle
         }
