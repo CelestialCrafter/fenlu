@@ -39,30 +39,35 @@ use qobject::{FenluMedia, FenluMediaCxxQtThread};
 use tokio::{sync::mpsc, task};
 use tracing::{debug, info};
 
-use crate::{config::CONFIG, pipeline::{Pipeline, Queries}};
+use crate::{
+    config::CONFIG,
+    pipeline::{Pipeline, Queries},
+};
 
 #[derive(Default)]
 pub struct Media {
     total: usize,
     items: Vec<QString>,
     queries: Queries,
-    pipeline: Pipeline
+    pipeline: Pipeline,
 }
 
 fn render(thread: FenluMediaCxxQtThread, items: Vec<QString>) {
-    thread.queue(move |mut media| {
-        debug!("rendering media");
-        let amount = items.len();
-        media.as_mut().cxx_qt_ffi_rust_mut().items = items;
-        media.as_mut().set_total(amount);
-    }).expect("could not queue update");
+    thread
+        .queue(move |mut media| {
+            debug!("rendering media");
+            let amount = items.len();
+            media.as_mut().cxx_qt_ffi_rust_mut().items = items;
+            media.as_mut().set_total(amount);
+        })
+        .expect("could not queue update");
 }
 
 impl qobject::FenluMedia {
     pub fn item(&self, index: usize) -> QString {
         match self.items.get(index as usize) {
             Some(media) => media.clone(),
-            None => QString::default()
+            None => QString::default(),
         }
     }
 
@@ -71,7 +76,11 @@ impl qobject::FenluMedia {
     }
 
     pub fn set_query(self: Pin<&mut Self>, key: QString, query: QString) {
-        *self.cxx_qt_ffi_rust_mut().queries.entry((&key).into()).or_default() = (&query).into();
+        *self
+            .cxx_qt_ffi_rust_mut()
+            .queries
+            .entry((&key).into())
+            .or_default() = (&query).into();
     }
 
     pub fn handle_pipeline(self: Pin<&mut Self>) {
@@ -81,30 +90,42 @@ impl qobject::FenluMedia {
         let (tx, mut rx) = mpsc::channel(buffer_size);
 
         task::spawn(async move {
-                let mut items = vec![];
-                let mut last_update = Instant::now();
+            let mut items = vec![];
+            let mut last_update = Instant::now();
 
-                qthread.queue(move |media| {
+            qthread
+                .queue(move |media| {
                     block_on(async {
-                        media.pipeline.set_queries(&media.queries).await.expect("could not set queries");
-                        media.pipeline.run(buffer_size, tx).await.expect("could not run pipeline");
+                        media
+                            .pipeline
+                            .set_queries(&media.queries)
+                            .await
+                            .expect("could not set queries");
+                        media
+                            .pipeline
+                            .run(buffer_size, tx)
+                            .await
+                            .expect("could not run pipeline");
                     });
-                }).expect("could not queue pipeline run");
+                })
+                .expect("could not queue pipeline run");
 
-                while let Some(media) = rx.recv().await {
-                    info!("media recieved: {:?}", media.uri.to_string());
-                    let media = QString::from(&serde_json::to_string(&media).expect("media should encode to json"));
-                    items.push(media);
+            while let Some(media) = rx.recv().await {
+                info!("media recieved: {:?}", media.uri.to_string());
+                let media = QString::from(
+                    &serde_json::to_string(&media).expect("media should encode to json"),
+                );
+                items.push(media);
 
-                    // send items to qt every media_update_interval
-                    if last_update.elapsed().as_millis() >= CONFIG.media_update_interval {
-                        last_update = Instant::now();
-                        render(qthread.clone(), items.clone());
-                    }
+                // send items to qt every media_update_interval
+                if last_update.elapsed().as_millis() >= CONFIG.media_update_interval {
+                    last_update = Instant::now();
+                    render(qthread.clone(), items.clone());
                 }
+            }
 
-                render(qthread, items.clone());
-            });
+            render(qthread, items.clone());
+        });
     }
 }
 
@@ -113,4 +134,3 @@ impl cxx_qt::Initialize for FenluMedia {
         self.handle_pipeline();
     }
 }
-

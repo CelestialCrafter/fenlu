@@ -3,6 +3,7 @@
 import os
 import sys
 import json
+import traceback
 import tomllib
 from urllib.parse import quote
 from PIL import Image, UnidentifiedImageError
@@ -22,7 +23,10 @@ def handle_generate(params):
 
     media = []
     for path in batch:
-        image = Image.open(path)
+        try:
+            image = Image.open(path)
+        except UnidentifiedImageError:
+            continue
 
         media.append({
             'title': os.path.basename(path),
@@ -68,7 +72,7 @@ for line in sys.stdin:
                 raise Exception("unknown method")
     except Exception as e:
                 result = None
-                error = str(e)
+                error = traceback.format_exc()
 
     print(json.dumps({
         'id': id,
