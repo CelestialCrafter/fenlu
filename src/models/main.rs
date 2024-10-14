@@ -4,7 +4,7 @@ use iced::{
     widget::{column, image, Column},
     Subscription, Task,
 };
-use tokio::{sync::mpsc, task};
+use tokio::sync::mpsc;
 use tracing::{info, warn};
 
 use crate::{config::CONFIG, pipeline::Pipeline, protocol::media::Media};

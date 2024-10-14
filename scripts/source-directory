@@ -23,7 +23,10 @@ def handle_generate(params):
 
     media = []
     for path in batch:
-        image = Image.open(path)
+        try:
+            image = Image.open(path)
+        except UnidentifiedImageError:
+            continue
 
         media.append({
             'title': os.path.basename(path),

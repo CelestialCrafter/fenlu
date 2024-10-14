@@ -17,7 +17,7 @@ use tokio::{
     sync::mpsc::{channel, Receiver},
     task::{self, JoinSet},
 };
-use tracing::{debug, debug_span};
+use tracing::debug_span;
 
 pub const DB_PATH: &str = "fenlu.db";
 

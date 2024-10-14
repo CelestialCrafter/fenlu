@@ -7,7 +7,7 @@ use std::{
 
 use dashmap::DashMap;
 use eyre::{OptionExt, Report, Result};
-use futures::{channel::oneshot, future::join_all};
+use futures::future::join_all;
 use tokio::{sync::mpsc, task};
 use tracing::{debug, error, info_span, Instrument};
 
@@ -24,18 +24,19 @@ pub struct Script {
     pub path: PathBuf,
     pub capabilities: Capabilities,
     request_tx: mpsc::Sender<Request>,
-    pending_requests: DashMap<Id, oneshot::Sender<Response>>,
+    pending_requests: DashMap<Id, Response>,
 }
 
 impl Script {
     pub async fn request(&self, req: Request) -> Response {
         let id = req.id.clone();
-        let (tx, rx) = oneshot::channel();
-
-        self.pending_requests.insert(id.clone(), tx);
         self.request_tx.send(req).await.unwrap();
 
-        rx.await.unwrap()
+        while !self.pending_requests.contains_key(&id) {
+            task::yield_now().await;
+        }
+
+        self.pending_requests.remove(&id).unwrap().1
     }
 }
 
@@ -122,14 +123,7 @@ pub async fn spawn_server(path: PathBuf) -> Result<Arc<Script>> {
                 for line in stdout.lines() {
                     let response: Response = serde_json::from_str(line?.as_str())?;
                     let id = response.id.clone();
-
-                    let tx = script
-                        .pending_requests
-                        .remove(&id)
-                        .expect("response id should be in pending requests")
-                        .1;
-
-                    tx.send(response).unwrap();
+                    script.pending_requests.insert(id.clone(), response);
                     debug!(id = ?id, "completed request");
                 }
 

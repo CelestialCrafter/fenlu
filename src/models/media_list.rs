@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::LazyLock};
 use eyre::Result;
 use fluent_uri::{component::Scheme, UriRef};
 use iced::{
-    widget::{column, image, text, Image, Row},
+    widget::{column, image, scrollable, text, Image, Row},
     Element,
 };
 use tokio::sync::RwLock;
@@ -51,14 +51,16 @@ impl MediaList {
         self.media.push((media, handle));
     }
     pub fn view(&self) -> Element<main::Message> {
-        Row::with_children(self.media.iter().map(|(media, handle)| {
-            column![
-                text(media.title.clone()),
-                Image::new(handle).width(128).height(128)
-            ]
-            .into()
-        }))
-        .wrap()
+        scrollable(
+            Row::with_children(self.media.iter().map(|(media, handle)| {
+                column![
+                    text(media.title.clone()),
+                    Image::new(handle).width(128).height(128)
+                ]
+                .into()
+            }))
+            .wrap(),
+        )
         .into()
     }
 }
