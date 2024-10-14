@@ -1,19 +1,14 @@
 use std::{
-    collections::HashMap,
     io::{BufRead, BufReader, BufWriter, Write},
     path::PathBuf,
     process::{Command, Stdio},
     sync::Arc,
-    time::Duration,
 };
 
+use dashmap::DashMap;
 use eyre::{OptionExt, Report, Result};
-use futures::future::join_all;
-use tokio::{
-    sync::{mpsc, Mutex},
-    task,
-    time::sleep,
-};
+use futures::{channel::oneshot, future::join_all};
+use tokio::{sync::mpsc, task};
 use tracing::{debug, error, info_span, Instrument};
 
 use crate::{
@@ -29,16 +24,18 @@ pub struct Script {
     pub path: PathBuf,
     pub capabilities: Capabilities,
     request_tx: mpsc::Sender<Request>,
-    pending_requests: Mutex<HashMap<Id, Option<Response>>>,
+    pending_requests: DashMap<Id, oneshot::Sender<Response>>,
 }
 
 impl Script {
     pub async fn request(&self, req: Request) -> Response {
         let id = req.id.clone();
+        let (tx, rx) = oneshot::channel();
+
+        self.pending_requests.insert(id.clone(), tx);
         self.request_tx.send(req).await.unwrap();
-        sleep(Duration::from_secs(1)).await;
-        let mut pending = self.pending_requests.lock().await;
-        pending.remove(id.as_str()).unwrap().unwrap()
+
+        rx.await.unwrap()
     }
 }
 
@@ -63,7 +60,7 @@ pub async fn spawn_server(path: PathBuf) -> Result<Arc<Script>> {
         path: path.clone(),
         capabilities: Capabilities::default(),
         request_tx,
-        pending_requests: Mutex::new(HashMap::new()),
+        pending_requests: DashMap::new(),
     };
 
     // manually request capabilities before the script is wrapped in an Arc and therefore immutable
@@ -125,9 +122,14 @@ pub async fn spawn_server(path: PathBuf) -> Result<Arc<Script>> {
                 for line in stdout.lines() {
                     let response: Response = serde_json::from_str(line?.as_str())?;
                     let id = response.id.clone();
-                    let mut pending = script.pending_requests.lock().await;
 
-                    pending.insert(id.clone(), Some(response));
+                    let tx = script
+                        .pending_requests
+                        .remove(&id)
+                        .expect("response id should be in pending requests")
+                        .1;
+
+                    tx.send(response).unwrap();
                     debug!(id = ?id, "completed request");
                 }
 

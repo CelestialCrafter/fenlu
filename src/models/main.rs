@@ -5,7 +5,7 @@ use iced::{
     Subscription, Task,
 };
 use tokio::{sync::mpsc, task};
-use tracing::{info, instrument};
+use tracing::{info, warn};
 
 use crate::{config::CONFIG, pipeline::Pipeline, protocol::media::Media};
 
@@ -26,9 +26,11 @@ pub enum Message {
 
 fn start_pipeline() -> impl Stream<Item = Message> {
     stream::channel(CONFIG.buffer_size, |mut message_tx| async move {
-        // @TODO handle unwraps
         let mut pipeline = Pipeline::default();
-        pipeline.populate().await.unwrap();
+        pipeline
+            .populate()
+            .await
+            .expect("could not populate pipeline");
 
         let (work_tx, mut work_rx) = mpsc::channel(1);
         message_tx
@@ -39,21 +41,23 @@ fn start_pipeline() -> impl Stream<Item = Message> {
         while let Some(_) = work_rx.recv().await {
             info!("running pipeline");
 
-            let (media_tx, mut media_rx) = mpsc::channel::<Media>(CONFIG.buffer_size);
-            pipeline.run(CONFIG.buffer_size, media_tx).await.unwrap();
+            let mut media_rx = pipeline.run(CONFIG.buffer_size).await;
 
             let mut message_tx = message_tx.clone();
-            task::spawn(async move {
-                while let Some(media) = media_rx.recv().await {
-                    let handle = image_handle_from_uri(media.uri.clone()).await?;
-                    message_tx.send(Message::NewMedia((media, handle))).await?;
-                }
+            while let Some(media) = media_rx.recv().await {
+                let handle = match image_handle_from_uri(media.uri.clone()).await {
+                    Ok(h) => h,
+                    Err(error) => {
+                        warn!(error = ?error, "could not create image handle");
+                        continue;
+                    }
+                };
 
-                Ok::<_, eyre::Report>(())
-            })
-            .await
-            .unwrap()
-            .unwrap();
+                message_tx
+                    .send(Message::NewMedia((media, handle)))
+                    .await
+                    .unwrap();
+            }
         }
     })
 }
@@ -63,7 +67,6 @@ impl Main {
         Subscription::run(start_pipeline)
     }
 
-    #[instrument(name = "main update", level = "debug", skip(self))]
     pub fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::NewMedia((media, handle)) => {

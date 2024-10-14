@@ -8,10 +8,17 @@ from urllib.parse import urlparse, urlunparse
 with open('config-transform-proxy.toml', 'rb') as file:
     config = tomllib.load(file)
 
-for line in sys.stdin:
-    line = line.rstrip()
-    media = json.loads(line)
+def handle_capabilities():
+    return {
+        'media': {
+            'transform': True
+        },
+        'query': {
+            'query': True
+        }
+    }
 
+def transform(media):
     suffix = ''
     if 'source-pixiv' in media['history']:
         suffix = "pixiv"
@@ -32,4 +39,35 @@ for line in sys.stdin:
     # "urlunparse".. really?
     media['uri'] = urlunparse(uri)
 
-    print(json.dumps(media))
+    return media
+
+def handle_transform(params):
+    return list(map(transform, params))
+
+for line in sys.stdin:
+    # strip off EOF
+    line = line.rstrip()
+
+    request = json.loads(line)
+    params = request['params']
+    id = request['id']
+
+    result = {}
+    error = None
+
+    match request['method']:
+        case 'capabilities/capabilities':
+            result = handle_capabilities()
+        case 'query/query':
+            result = handle_query(params)
+        case 'media/transform':
+            result = handle_transform(params)
+        case _:
+            result = None
+            error = "unknown method"
+
+    print(json.dumps({
+        'id': id,
+        'result': result,
+        'error': error
+    }))

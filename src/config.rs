@@ -27,7 +27,7 @@ pub struct Config {
     pub whitelisted_scripts: Vec<String>,
     #[serde(default = "default_pipeline_mode")]
     pub pipeline_mode: PipelineMode,
-    #[serde(default = "default_batch_size")]
+    #[serde(default = "default_buffer_size")]
     pub buffer_size: usize,
 }
 
@@ -43,8 +43,8 @@ fn default_pipeline_mode() -> PipelineMode {
     }
 }
 
-fn default_batch_size() -> usize {
-    12
+fn default_buffer_size() -> usize {
+    100
 }
 
 pub static CONFIG: LazyLock<Config> = LazyLock::new(|| {

@@ -19,7 +19,7 @@ pub struct Media {
 #[serde(tag = "type")]
 pub enum Extra {
     Image { width: u64, height: u64 },
-    PDF { author: String, summary: String }
+    PDF { author: String, summary: String },
 }
 
 pub const FILTER_METHOD: &str = "media/filter";
@@ -32,16 +32,15 @@ pub type TransformResponse = Media;
 pub type FilterRequest = Media;
 #[derive(Debug, Deserialize, Clone)]
 pub struct FilterResponse {
-    pub included: bool
+    pub included: bool,
 }
 
 #[derive(Debug, Serialize, Clone)]
 pub struct GenerateRequest {
-    pub batch_size: u32
+    pub batch_size: u32,
 }
 #[derive(Debug, Deserialize, Clone)]
 pub struct GenerateResponse {
     pub media: Vec<Media>,
-    pub finished: bool
+    pub finished: bool,
 }
-

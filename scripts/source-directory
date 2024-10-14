@@ -2,6 +2,7 @@
 
 import os
 import sys
+import traceback
 import json
 import tomllib
 from urllib.parse import quote
@@ -68,7 +69,7 @@ for line in sys.stdin:
                 raise Exception("unknown method")
     except Exception as e:
                 result = None
-                error = str(e)
+                error = traceback.format_exc()
 
     print(json.dumps({
         'id': id,

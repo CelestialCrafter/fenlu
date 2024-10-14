@@ -34,17 +34,13 @@ def handle_query(params):
 
     return { 'query': query }
 
-def handle_transform(params):
-    global tags
-
-    included = len(tags) == 0 or has_tags(params['tags'], tags)
-
-    return { 'included': included }
+def handle_filter(params):
+    return list(map(lambda media: len(tags) == 0 or has_tags(params['tags'], tags)))
 
 def handle_capabilities():
     return {
         'media': {
-            'transform': True
+            'filter': True
         },
         'query': {
             'query': True
@@ -67,8 +63,8 @@ for line in sys.stdin:
             result = handle_capabilities()
         case 'query/query':
             result = handle_query(params)
-        case 'media/transform':
-            result = handle_transform(params)
+        case 'media/filter':
+            result = handle_filter(params)
         case _:
             result = None
             error = "unknown method"

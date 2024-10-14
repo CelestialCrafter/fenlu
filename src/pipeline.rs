@@ -14,10 +14,10 @@ use eyre::{Report, Result};
 use sqlx::SqliteConnection;
 use tokio::{
     join,
-    sync::mpsc::{channel, Sender},
+    sync::mpsc::{channel, Receiver},
     task::{self, JoinSet},
 };
-use tracing::debug_span;
+use tracing::{debug, debug_span};
 
 pub const DB_PATH: &str = "fenlu.db";
 
@@ -103,7 +103,7 @@ impl Pipeline {
         Ok(())
     }
 
-    pub async fn run(&self, batch_size: usize, output: Sender<media::Media>) -> Result<()> {
+    pub async fn run(&self, buffer_size: usize) -> Receiver<media::Media> {
         // setup
         let mut source_scripts = vec![];
         let mut transform_scripts = vec![];
@@ -119,14 +119,15 @@ impl Pipeline {
             }
         }
 
-        let (tx_s, mut rx_s) = channel(batch_size);
-        let (tx_t, mut rx_t) = channel(batch_size);
+        let (tx_s, mut rx_s) = channel(buffer_size);
+        let (tx_t, mut rx_t) = channel(buffer_size);
+        let (output_tx, output_rx) = channel(buffer_size);
 
         let sources = task::spawn(async move {
             for source in source_scripts {
                 loop {
                     let name = utils::path_to_name(&source.path);
-                    let _ = debug_span!("requesting filter", name = name).enter();
+                    let _ = debug_span!("requesting source", name = name).enter();
 
                     let response: media::GenerateResponse = serde_json::from_value(
                         source
@@ -134,7 +135,7 @@ impl Pipeline {
                                 id: utils::generate_id(),
                                 method: media::GENERATE_METHOD.to_string(),
                                 params: serde_json::to_value(media::GenerateRequest {
-                                    batch_size: batch_size.clone() as u32,
+                                    batch_size: buffer_size.clone() as u32,
                                 })?,
                             })
                             .await
@@ -210,19 +211,21 @@ impl Pipeline {
                 }
 
                 if included {
-                    output.send(media).await?;
+                    output_tx.send(media).await?;
                 }
             }
 
             Ok::<_, Report>(())
         });
 
-        let joined = join!(sources, transforms, filters);
-        for result in vec![joined.0, joined.1, joined.2] {
-            result??;
-        }
+        task::spawn(async {
+            let joined = join!(sources, transforms, filters);
+            for result in vec![joined.0, joined.1, joined.2] {
+                result.unwrap().unwrap();
+            }
+        });
 
-        Ok(())
+        output_rx
     }
 }
 
