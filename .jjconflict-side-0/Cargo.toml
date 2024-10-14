@@ -7,6 +7,7 @@ edition = "2021"
 cxx = "1.0.128"
 cxx-qt = "0.6.1"
 cxx-qt-lib = "0.6.1"
+dashmap = "6.1.0"
 eyre = "0.6.12"
 fluent-uri = { version = "0.2.0", features = ["serde"] }
 futures = "0.3.30"

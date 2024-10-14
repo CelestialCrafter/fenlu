@@ -7,7 +7,7 @@ Item {
     function runPipeline() {
         FenluMedia.setTotal(0);
         mediaModel.clear();
-        FenluMedia.runPipeline();
+        FenluMedia.handlePipeline();
     }
 
     FenluScripts {
