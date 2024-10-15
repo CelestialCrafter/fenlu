@@ -3,25 +3,24 @@ import QtQuick.Controls 2.12
 import fenlu
 
 Image {
-    required property var data
-
-    //MediaDetails {
-    //    id: popup
-    //    data: data
-    //}
+    required property var media
 
     asynchronous: true
+    cache: false
     fillMode: Image.PreserveAspectCrop
-    source: data.uri
+    source: media.uri
+    sourceSize: Qt.size(media.width || undefined, media.height || undefined)
 
     Label {
         horizontalAlignment: Text.AlignHCenter
-        anchors.top: parent ? parent.top : undefined;
-        width: parent ? parent.width : 0;
+        anchors.top: parent.top
+        width: parent.width
         topPadding: 5
         bottomPadding: 5
+        fontSizeMode: Text.Fit
+        elide: Text.ElideRight
 
-        text: data ? data.title : ""
+        text: media.title
         color: "white"
 
         background: Rectangle {
@@ -31,8 +30,12 @@ Image {
     }
 
     MouseArea {
-        anchors.fill: parent ? parent : undefined;
-        //onClicked: popup.open();
-        onDoubleClicked: FenluMedia.open(data.uri);
+        anchors.fill: parent
+        onClicked: {
+            details.current = media;
+            details.open();
+        }
+        onDoubleClicked: FenluMedia.open(media.uri);
     }
 }
+
