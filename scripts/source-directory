@@ -11,10 +11,15 @@ from PIL import Image, UnidentifiedImageError
 with open('config-source-directory.toml', 'rb') as file:
     config = tomllib.load(file)
 
-files = [os.path.join(root, file) for root, _, files in os.walk(os.path.expanduser(config['path'])) for file in files]
+files = []
+initialized = False
 
 def handle_generate(params):
     global files
+    global initialized
+    if not initialized:
+        files = [os.path.join(root, file) for root, _, files in os.walk(os.path.expanduser(config['path'])) for file in files]
+        initialized = True
 
     batch_size = params['batch_size']
 

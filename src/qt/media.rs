@@ -31,41 +31,39 @@ pub mod qobject {
     impl cxx_qt::Constructor<()> for FenluMedia {}
 }
 
-use std::{pin::Pin, time::Instant};
+use std::{
+    collections::HashMap,
+    pin::Pin,
+    sync::{Arc, RwLock},
+    time::Instant,
+};
 
 use cxx_qt_lib::{QString, QUrl};
 use futures::executor::block_on;
 use qobject::{FenluMedia, FenluMediaCxxQtThread};
 use tokio::{sync::mpsc, task};
-use tracing::{debug, info};
+use tracing::{info, warn};
 
-use crate::{
-    config::CONFIG,
-    pipeline::{Pipeline, Queries},
-};
+use crate::{config::CONFIG, pipeline::Pipeline};
 
 #[derive(Default)]
 pub struct Media {
     total: usize,
-    items: Vec<QString>,
-    queries: Queries,
-    pipeline: Pipeline,
+    items: Arc<RwLock<Vec<QString>>>,
+    queries: HashMap<String, String>,
+    pipeline: Arc<Pipeline>,
 }
 
-fn render(thread: FenluMediaCxxQtThread, items: Vec<QString>) {
+fn render(thread: FenluMediaCxxQtThread, total: usize) {
     thread
-        .queue(move |mut media| {
-            debug!("rendering media");
-            let amount = items.len();
-            media.as_mut().cxx_qt_ffi_rust_mut().items = items;
-            media.as_mut().set_total(amount);
-        })
+        .queue(move |mut media| media.as_mut().set_total(total))
         .expect("could not queue update");
 }
 
 impl qobject::FenluMedia {
     pub fn item(&self, index: usize) -> QString {
-        match self.items.get(index as usize) {
+        let items = self.items.read().unwrap();
+        match items.get(index as usize) {
             Some(media) => media.clone(),
             None => QString::default(),
         }
@@ -86,51 +84,65 @@ impl qobject::FenluMedia {
     pub fn handle_pipeline(self: Pin<&mut Self>) {
         let qthread = self.cxx_qt_ffi_qt_thread();
 
-        let buffer_size = 48;
-        let (tx, mut rx) = mpsc::channel(buffer_size);
+        let (tx, mut rx) = mpsc::channel(CONFIG.buffer_size);
+        let items = self.items.clone();
+
+        let queries = self.queries.clone();
+        let pipeline = self.pipeline.clone();
 
         task::spawn(async move {
-            let mut items = vec![];
+            info!("running pipeline");
+            pipeline
+                .set_queries(&queries)
+                .await
+                .expect("could not set queries");
+
+            pipeline
+                .run(CONFIG.buffer_size, tx)
+                .await
+                .expect("could not run pipeline");
+            info!("pipeline finished");
+        });
+
+        task::spawn(async move {
             let mut last_update = Instant::now();
+            loop {
+                let mut batch = Vec::with_capacity(CONFIG.buffer_size);
+                if rx.recv_many(&mut batch, CONFIG.buffer_size).await == 0 {
+                    break;
+                }
 
-            qthread
-                .queue(move |media| {
-                    block_on(async {
-                        media
-                            .pipeline
-                            .set_queries(&media.queries)
-                            .await
-                            .expect("could not set queries");
-                        media
-                            .pipeline
-                            .run(buffer_size, tx)
-                            .await
-                            .expect("could not run pipeline");
-                    });
-                })
-                .expect("could not queue pipeline run");
+                let mut serialized = batch
+                    .into_iter()
+                    .map(|media| {
+                        QString::from(
+                            &serde_json::to_string(&media).expect("media should encode to json"),
+                        )
+                    })
+                    .collect();
 
-            while let Some(media) = rx.recv().await {
-                info!("media recieved: {:?}", media.uri.to_string());
-                let media = QString::from(
-                    &serde_json::to_string(&media).expect("media should encode to json"),
-                );
-                items.push(media);
+                let mut items = items.write().unwrap();
+                items.append(&mut serialized);
 
-                // send items to qt every media_update_interval
-                if last_update.elapsed().as_millis() >= CONFIG.media_update_interval {
-                    last_update = Instant::now();
-                    render(qthread.clone(), items.clone());
+                let now = Instant::now();
+                if now.duration_since(last_update).as_millis() > CONFIG.media_update_interval.into()
+                {
+                    last_update = now;
+                    render(qthread.clone(), items.len());
                 }
             }
 
-            render(qthread, items.clone());
+            let items = items.read().unwrap();
+            render(qthread.clone(), items.len());
         });
     }
 }
 
 impl cxx_qt::Initialize for FenluMedia {
-    fn initialize(self: Pin<&mut Self>) {
+    fn initialize(mut self: Pin<&mut Self>) {
+        let mut pipeline = Pipeline::default();
+        block_on(pipeline.populate()).expect("could not populate pipeline");
+        self.as_mut().cxx_qt_ffi_rust_mut().pipeline = Arc::new(pipeline);
         self.handle_pipeline();
     }
 }

@@ -1,9 +1,9 @@
-pub mod qt;
 pub mod config;
 pub mod pipeline;
 pub mod protocol;
-pub mod utils;
+pub mod qt;
 pub mod script;
+pub mod utils;
 
 use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QUrl};
 
