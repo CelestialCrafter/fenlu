@@ -42,7 +42,7 @@ use cxx_qt_lib::{QString, QUrl};
 use futures::executor::block_on;
 use qobject::{FenluMedia, FenluMediaCxxQtThread};
 use tokio::{sync::mpsc, task};
-use tracing::{info, warn};
+use tracing::info;
 
 use crate::{config::CONFIG, pipeline::Pipeline};
 
