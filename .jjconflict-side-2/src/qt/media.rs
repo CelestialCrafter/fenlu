@@ -42,7 +42,7 @@ use cxx_qt_lib::{QString, QUrl};
 use futures::executor::block_on;
 use qobject::{FenluMedia, FenluMediaCxxQtThread};
 use tokio::{sync::mpsc, task};
-use tracing::info;
+use tracing::{debug, info, instrument};
 
 use crate::{config::CONFIG, pipeline::Pipeline};
 
@@ -70,7 +70,7 @@ impl qobject::FenluMedia {
     }
 
     pub fn open(&self, url: QUrl) {
-        open::that_detached(url.to_string()).expect("media should open");
+        open::that_detached(url.to_string()).expect("could not open media");
     }
 
     pub fn set_query(self: Pin<&mut Self>, key: QString, query: QString) {
@@ -81,7 +81,9 @@ impl qobject::FenluMedia {
             .or_default() = (&query).into();
     }
 
+    #[instrument(skip(self))]
     pub fn handle_pipeline(self: Pin<&mut Self>) {
+        info!("starting pipeline");
         let qthread = self.cxx_qt_ffi_qt_thread();
 
         let (tx, mut rx) = mpsc::channel(CONFIG.buffer_size);
@@ -91,7 +93,6 @@ impl qobject::FenluMedia {
         let pipeline = self.pipeline.clone();
 
         task::spawn(async move {
-            info!("running pipeline");
             pipeline
                 .set_queries(&queries)
                 .await
@@ -111,6 +112,8 @@ impl qobject::FenluMedia {
                 if rx.recv_many(&mut batch, CONFIG.buffer_size).await == 0 {
                     break;
                 }
+
+                debug!(amount = ?batch.len(), "received new batch");
 
                 let mut serialized = batch
                     .into_iter()
