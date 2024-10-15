@@ -9,7 +9,7 @@ Image {
     cache: false
     fillMode: Image.PreserveAspectCrop
     source: media.uri
-    sourceSize: Qt.size(media.width || undefined, media.height || undefined)
+    sourceSize: media.type === "Image" ? Qt.size(media.width, media.height) : null
 
     Label {
         horizontalAlignment: Text.AlignHCenter

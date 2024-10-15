@@ -30,10 +30,7 @@ pub struct Script {
 impl Script {
     pub async fn request(&self, req: Request) -> Response {
         let id = req.id.clone();
-        self.request_tx
-            .send(req)
-            .await
-            .expect("reciever was dropped");
+        self.request_tx.send(req).await.unwrap();
 
         while !self.pending_requests.contains_key(&id) {
             task::yield_now().await;
