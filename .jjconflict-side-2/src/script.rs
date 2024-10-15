@@ -40,7 +40,7 @@ impl Script {
     }
 }
 
-pub async fn spawn_server(path: PathBuf) -> Result<Arc<Script>> {
+pub async fn spawn_server(path: &PathBuf) -> Result<Arc<Script>> {
     let path = path.canonicalize()?;
 
     let mut dir = path.clone();
@@ -107,7 +107,7 @@ pub async fn spawn_server(path: PathBuf) -> Result<Arc<Script>> {
 
                 Ok::<_, Report>(())
             }
-            .instrument(info_span!("response handler", name = name)),
+            .instrument(info_span!("request handler", name = name)),
         )
     };
 

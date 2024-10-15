@@ -17,7 +17,7 @@ Item {
     }
 
     MediaDetails {
-        id: details
+        id: mediaDetails
     }
 
     CustomScrollGridView {

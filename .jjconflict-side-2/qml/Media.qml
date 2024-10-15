@@ -31,11 +31,18 @@ Image {
 
     MouseArea {
         anchors.fill: parent
-        onClicked: {
-            details.current = media;
-            details.open();
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onClicked: event => {
+            switch (event.button) {
+                case Qt.LeftButton:
+                    mediaDetails.current = media;
+                    mediaDetails.open();
+                    break;
+                case Qt.RightButton:
+                    Qt.openUrlExternally(media.uri);
+                    break;
+            }
         }
-        onDoubleClicked: FenluMedia.open(media.uri);
     }
 }
 
