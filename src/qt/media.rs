@@ -21,7 +21,7 @@ pub mod qobject {
 
     unsafe extern "RustQt" {
         #[qinvokable]
-        fn item(self: &FenluMedia, index: usize) -> QString;
+        fn items(self: &FenluMedia, from: usize) -> QSet_QString;
         #[qinvokable]
         fn queryable_scripts(self: &FenluMedia) -> QSet_QString;
         #[qinvokable]
@@ -68,12 +68,15 @@ fn render(thread: FenluMediaCxxQtThread, total: usize) {
 }
 
 impl qobject::FenluMedia {
-    pub fn item(&self, index: usize) -> QString {
+    pub fn items(&self, at: usize) -> QSet_QString {
+        let mut set = QSet_QString::default();
         let items = self.items.read().unwrap();
-        match items.get(index as usize) {
-            Some(media) => media.clone(),
-            None => QString::default(),
+
+        for item in &items[at..items.len()] {
+            set.insert(item.clone());
         }
+
+        set
     }
 
     pub fn queryable_scripts(&self) -> QSet_QString {

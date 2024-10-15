@@ -8,8 +8,8 @@ Item {
         property var previousTotal: 0
 
         function onTotalChanged() {
-            for (let i = previousTotal; i < FenluMedia.total; i++) {
-                mediaModel.append({ media: JSON.parse(FenluMedia.item(i)) });
+            for (const item of FenluMedia.items(previousTotal)) {
+                mediaModel.append({ media: JSON.parse(item) });
             }
 
             previousTotal = FenluMedia.total;
