@@ -21,18 +21,18 @@ impl Default for PipelineMode {
 
 #[derive(Deserialize)]
 pub struct Config {
-    #[serde(default = "default_media_update_interval")]
-    pub media_update_interval: u128,
     #[serde(default)]
     pub whitelisted_scripts: Vec<String>,
     #[serde(default = "default_pipeline_mode")]
     pub pipeline_mode: PipelineMode,
+    #[serde(default = "default_media_update_interval")]
+    pub media_update_interval: u64,
     #[serde(default = "default_buffer_size")]
     pub buffer_size: usize,
 }
 
-fn default_media_update_interval() -> u128 {
-    250
+fn default_media_update_interval() -> u64 {
+    500
 }
 
 fn default_pipeline_mode() -> PipelineMode {
@@ -44,7 +44,7 @@ fn default_pipeline_mode() -> PipelineMode {
 }
 
 fn default_buffer_size() -> usize {
-    100
+    250
 }
 
 pub static CONFIG: LazyLock<Config> = LazyLock::new(|| {
