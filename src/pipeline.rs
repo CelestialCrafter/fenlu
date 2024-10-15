@@ -11,14 +11,13 @@ use crate::{
     script, utils,
 };
 use eyre::{Report, Result};
-use futures::executor::block_on;
 use sqlx::SqliteConnection;
 use tokio::{
     join,
     sync::mpsc,
     task::{self, JoinSet},
 };
-use tracing::debug_span;
+use tracing::info;
 
 pub const DB_PATH: &str = "fenlu.db";
 
@@ -49,6 +48,7 @@ pub fn append_history(path: PathBuf, media: &mut media::Media) {
     media.history.push(name);
 }
 
+#[derive(Default)]
 pub struct Pipeline {
     pub scripts: Vec<Arc<script::Script>>,
 }
@@ -103,7 +103,7 @@ impl Pipeline {
         Ok(())
     }
 
-    pub async fn run(&self, batch_size: usize, output: mpsc::Sender<media::Media>) -> Result<()> {
+    pub async fn run(&self, buffer_size: usize, output: mpsc::Sender<media::Media>) -> Result<()> {
         // setup
         let mut source_scripts = vec![];
         let mut transform_scripts = vec![];
@@ -119,14 +119,15 @@ impl Pipeline {
             }
         }
 
-        let (tx_s, mut rx_s) = mpsc::channel(batch_size);
-        let (tx_t, mut rx_t) = mpsc::channel(batch_size);
+        let (tx_s, mut rx_s) = mpsc::channel(buffer_size);
+        let (tx_t, mut rx_t) = mpsc::channel(buffer_size);
 
+        // sources
         let sources = task::spawn(async move {
             for source in source_scripts {
                 loop {
                     let name = utils::path_to_name(&source.path);
-                    let _ = debug_span!("requesting filter", name = name).enter();
+                    info!(name = ?name, "requesting source");
 
                     let response: media::GenerateResponse = serde_json::from_value(
                         source
@@ -134,7 +135,7 @@ impl Pipeline {
                                 id: utils::generate_id(),
                                 method: media::GENERATE_METHOD.to_string(),
                                 params: serde_json::to_value(media::GenerateRequest {
-                                    batch_size: batch_size.clone() as u32,
+                                    batch_size: buffer_size.clone() as u32,
                                 })?,
                             })
                             .await
@@ -157,59 +158,76 @@ impl Pipeline {
 
         // transforms
         let transforms = task::spawn(async move {
-            while let Some(mut media) = rx_s.recv().await {
+            loop {
+                let mut buffer = Vec::with_capacity(buffer_size);
+                if rx_s.recv_many(&mut buffer, buffer_size).await == 0 {
+                    break;
+                }
+
                 for transform in transform_scripts.clone() {
                     let name = utils::path_to_name(&transform.path);
-                    let _ = debug_span!("requesting transform", name = name).enter();
+                    info!(name = ?name, "requesting transform");
 
-                    media = serde_json::from_value(
+                    buffer = serde_json::from_value(
                         transform
                             .request(Request {
                                 id: utils::generate_id(),
                                 method: media::TRANSFORM_METHOD.to_string(),
-                                params: serde_json::to_value(media)?,
+                                params: serde_json::to_value(buffer)?,
                             })
                             .await
                             .result()?,
                     )?;
-                    append_history(transform.path.clone(), &mut media);
+
+                    for i in 0..buffer.len() {
+                        append_history(transform.path.clone(), &mut buffer[i]);
+                    }
                 }
 
-                tx_t.send(media).await?;
+                for media in buffer {
+                    tx_t.send(media).await?;
+                }
             }
+
             Ok::<_, Report>(())
         });
 
         // filters
         let filters = task::spawn(async move {
-            while let Some(mut media) = rx_t.recv().await {
-                let mut included = true;
-                let value = serde_json::to_value(media.clone())?;
+            loop {
+                let mut buffer = Vec::with_capacity(buffer_size);
+                if rx_t.recv_many(&mut buffer, buffer_size).await == 0 {
+                    break;
+                }
 
                 for filter in filter_scripts.clone() {
                     let name = utils::path_to_name(&filter.path);
-                    let _ = debug_span!("requesting filter", name = name).enter();
+                    info!(name = ?name, "requesting filter");
 
                     let response: media::FilterResponse = serde_json::from_value(
                         filter
                             .request(Request {
                                 id: utils::generate_id(),
                                 method: media::FILTER_METHOD.to_string(),
-                                params: value.clone(),
+                                params: serde_json::to_value(buffer.clone())?,
                             })
                             .await
                             .result()?,
                     )?;
 
-                    if !response.included {
-                        included = false;
-                        break;
-                    }
+                    buffer = buffer
+                        .into_iter()
+                        .enumerate()
+                        .filter(|(i, _)| response[*i])
+                        .map(|(_, media)| media)
+                        .collect();
 
-                    append_history(filter.path.clone(), &mut media);
+                    for i in 0..buffer.len() {
+                        append_history(filter.path.clone(), &mut buffer[i]);
+                    }
                 }
 
-                if included {
+                for media in buffer {
                     output.send(media).await?;
                 }
             }
