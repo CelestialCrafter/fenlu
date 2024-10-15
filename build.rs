@@ -5,20 +5,16 @@ fn main() {
         .qt_module("Network")
         .qml_module(QmlModule {
             uri: "fenlu",
-            rust_files: &[
-                "src/qt/media.rs",
-                "src/qt/scripts.rs"
-            ],
+            rust_files: &["src/qt/media.rs"],
             qml_files: &[
                 "qml/main.qml",
                 "qml/CustomScrollGridView.qml",
                 "qml/MediaList.qml",
                 "qml/Queries.qml",
                 "qml/Media.qml",
-                "qml/MediaDetails.qml"
+                "qml/MediaDetails.qml",
             ],
             ..Default::default()
         })
         .build();
 }
-

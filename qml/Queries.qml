@@ -10,10 +10,6 @@ Item {
         FenluMedia.handlePipeline();
     }
 
-    FenluScripts {
-        id: scripts
-    }
-
     Rectangle {
         anchors.fill: parent
     }
@@ -23,14 +19,14 @@ Item {
         anchors.fill: parent
 
         Repeater {
-            model: scripts.total
+            model: FenluMedia.queryableScripts()
             Item {
                 width: parent.width
                 height: 15
-                property string script: scripts.item(index)
+                required property string modelData
                 Text {
                     id: label
-                    text: script + ": "
+                    text: modelData + ": "
                 }
 
                 TextInput {
@@ -38,7 +34,7 @@ Item {
                     anchors.left: label.right
                     width: parent.width * 0.6
 
-                    onAccepted: runPipeline()
+                    onAccepted: FenluMedia.setQuery(modelData, input.text)
                 }
             }
         }
