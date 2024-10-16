@@ -5,9 +5,9 @@ import fenlu 1.0
 
 Item {
     function runPipeline() {
-        FenluMedia.setTotal(0);
+        FenluPipeline.setTotal(0);
         mediaModel.clear();
-        FenluMedia.handlePipeline();
+        FenluPipeline.handlePipeline();
     }
 
     Rectangle {
@@ -19,7 +19,7 @@ Item {
         anchors.fill: parent
 
         Repeater {
-            model: FenluMedia.queryableScripts()
+            model: FenluPipeline.queryableScripts()
             Item {
                 width: parent.width
                 height: 15
@@ -34,7 +34,7 @@ Item {
                     anchors.left: label.right
                     width: parent.width * 0.6
 
-                    onAccepted: FenluMedia.setQuery(modelData, input.text)
+                    onAccepted: FenluPipeline.setQuery(modelData, input.text)
                 }
             }
         }

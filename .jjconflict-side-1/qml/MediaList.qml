@@ -4,15 +4,15 @@ import fenlu 1.0
 
 Item {
     Connections {
-        target: FenluMedia
+        target: FenluPipeline
         property var previousTotal: 0
 
         function onTotalChanged() {
-            for (const item of FenluMedia.items(previousTotal)) {
+            for (const item of FenluPipeline.items(previousTotal)) {
                 mediaModel.append({ media: JSON.parse(item) });
             }
 
-            previousTotal = FenluMedia.total;
+            previousTotal = FenluPipeline.total;
         }
     }
 

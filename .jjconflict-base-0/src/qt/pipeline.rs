@@ -1,4 +1,4 @@
-#[cxx_qt::bridge(cxx_file_stem = "media")]
+#[cxx_qt::bridge(cxx_file_stem = "pipeline")]
 pub mod qobject {
     unsafe extern "C++" {
         include!("cxx-qt-lib/qstring.h");
@@ -16,22 +16,22 @@ pub mod qobject {
         #[qml_element]
         #[qml_singleton]
         #[qproperty(usize, total)]
-        type FenluMedia = super::Media;
+        type FenluPipeline = super::Media;
     }
 
     unsafe extern "RustQt" {
         #[qinvokable]
-        fn items(self: &FenluMedia, from: usize) -> QSet_QString;
+        fn items(self: &FenluPipeline, from: usize) -> QSet_QString;
         #[qinvokable]
-        fn queryable_scripts(self: &FenluMedia) -> QSet_QString;
+        fn queryable_scripts(self: &FenluPipeline) -> QSet_QString;
         #[qinvokable]
-        fn set_query(self: &FenluMedia, script: QString, query: QString);
+        fn set_query(self: &FenluPipeline, script: QString, query: QString);
         #[qinvokable]
-        fn handle_pipeline(self: Pin<&mut FenluMedia>);
+        fn handle_pipeline(self: Pin<&mut FenluPipeline>);
     }
 
-    impl cxx_qt::Threading for FenluMedia {}
-    impl cxx_qt::Constructor<()> for FenluMedia {}
+    impl cxx_qt::Threading for FenluPipeline {}
+    impl cxx_qt::Constructor<()> for FenluPipeline {}
 }
 
 use std::{
@@ -42,7 +42,7 @@ use std::{
 
 use cxx_qt_lib::QString;
 use futures::executor::block_on;
-use qobject::{FenluMedia, FenluMediaCxxQtThread, QSet_QString};
+use qobject::{FenluPipeline, FenluPipelineCxxQtThread, QSet_QString};
 use tokio::{sync::mpsc, task};
 use tracing::{debug, info, instrument, Instrument};
 
@@ -60,14 +60,14 @@ pub struct Media {
     pipeline: Arc<Pipeline>,
 }
 
-fn render(thread: FenluMediaCxxQtThread, total: usize) {
+fn render(thread: FenluPipelineCxxQtThread, total: usize) {
     debug!(total = ?total, "rendering media");
     thread
         .queue(move |mut media| media.as_mut().set_total(total))
         .expect("could not queue update");
 }
 
-impl qobject::FenluMedia {
+impl qobject::FenluPipeline {
     pub fn items(&self, at: usize) -> QSet_QString {
         let mut set = QSet_QString::default();
         let items = self.items.read().unwrap();
@@ -165,7 +165,7 @@ impl qobject::FenluMedia {
     }
 }
 
-impl cxx_qt::Initialize for FenluMedia {
+impl cxx_qt::Initialize for FenluPipeline {
     fn initialize(mut self: Pin<&mut Self>) {
         let mut pipeline = Pipeline::default();
         block_on(pipeline.populate()).expect("could not populate pipeline");
