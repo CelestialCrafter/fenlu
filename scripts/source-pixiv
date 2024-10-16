@@ -11,22 +11,22 @@ import tomllib
 with open("config-source-pixiv.toml", "rb") as file:
     config = tomllib.load(file)
 
-offset = 0
 max = 100
 prev_posts = max
 
 
-def handle_generate():
-    global offset
+def handle_generate(params):
     global max
     global prev_posts
+
+    state = params["state"]
 
     if config["nsfw"]:
         nsfw = "hide"
     else:
         nsfw = "show"
 
-    url = f'https://www.pixiv.net/ajax/user/{config["account"]["user_id"]}/illusts/bookmarks?tag=&offset={offset}&limit={max}&rest={nsfw}&lang=en'
+    url = f'https://www.pixiv.net/ajax/user/{config["account"]["user_id"]}/illusts/bookmarks?tag=&offset={max * state}&limit={max}&rest={nsfw}&lang=en'
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:131.0) Gecko/20100101 Firefox/131.0",
         "Cookie": f'PHPSESSID={config["account"]["user_id"]}_{config["account"]["token"]}',
@@ -47,10 +47,7 @@ def handle_generate():
         )
     )
 
-    prev_posts = len(data["body"]["works"])
-    offset += prev_posts
-
-    return {"media": media, "finished": prev_posts < max}
+    return {"media": media, "finished": len(data["body"]["works"]) < max}
 
 
 def transform(post):

@@ -34,8 +34,10 @@ pub type FilterResponse = Vec<bool>;
 
 #[derive(Debug, Serialize, Clone)]
 pub struct GenerateRequest {
-    pub batch_size: u32,
+    pub batch_size: usize,
+    pub state: usize,
 }
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct GenerateResponse {
     pub media: Vec<Media>,
