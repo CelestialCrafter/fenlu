@@ -68,7 +68,7 @@ def transform(post):
 
 
 def handle_capabilities():
-    return {"media": {"source": True}, "query": {"query": True}}
+    return {"media": {"source": True}}
 
 
 for line in sys.stdin:

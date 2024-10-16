@@ -51,9 +51,6 @@ def handle_capabilities():
     return {
         'media': {
             'source': True
-        },
-        'query': {
-            'query': True
         }
     }
 
