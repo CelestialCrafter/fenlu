@@ -44,7 +44,7 @@ def handle_capabilities():
             'filter': True
         },
         'query': {
-            'query': True
+            'set': True
         }
     }
 
@@ -62,7 +62,7 @@ for line in sys.stdin:
     match request['method']:
         case 'capabilities/capabilities':
             result = handle_capabilities()
-        case 'query/query':
+        case 'query/set':
             result = handle_query(params)
         case 'media/filter':
             result = handle_filter(params)

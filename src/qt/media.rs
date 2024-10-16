@@ -84,7 +84,7 @@ impl qobject::FenluMedia {
         self.pipeline
             .scripts
             .iter()
-            .filter(|(_, script)| script.capabilities.query.query)
+            .filter(|(_, script)| script.capabilities.query.set)
             .map(|(name, _)| QString::from(name))
             .for_each(|name| set.insert(name));
         set
@@ -99,7 +99,7 @@ impl qobject::FenluMedia {
                 .expect("script should exist")
                 .request(Request {
                     id: utils::generate_id(),
-                    method: query::QUERY_METHOD.to_string(),
+                    method: query::QUERY_SET_METHOD.to_string(),
                     params: serde_json::to_value(query::QueryRequest {
                         query: query.to_string(),
                     })

@@ -12,9 +12,6 @@ def handle_capabilities():
     return {
         'media': {
             'transform': True
-        },
-        'query': {
-            'query': True
         }
     }
 
@@ -58,8 +55,6 @@ for line in sys.stdin:
     match request['method']:
         case 'capabilities/capabilities':
             result = handle_capabilities()
-        case 'query/query':
-            result = handle_query(params)
         case 'media/transform':
             result = handle_transform(params)
         case _:

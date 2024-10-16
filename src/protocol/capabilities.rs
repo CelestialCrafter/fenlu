@@ -5,14 +5,13 @@ use serde::{Deserialize, Serialize};
 pub struct Media {
     pub source: bool,
     pub transform: bool,
-    pub filter: bool
+    pub filter: bool,
 }
 
 #[derive(Deserialize, Debug, Default)]
 #[serde(default)]
 pub struct Query {
-    pub query: bool,
-    pub completion: bool
+    pub set: bool,
 }
 
 #[derive(Deserialize, Debug, Default)]
