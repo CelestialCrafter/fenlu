@@ -5,7 +5,7 @@ import QtQuick.Layouts 2.12
 Popup {
     // dont even ask
     property var current: JSON.parse('{"title": "", "uri": "", "type": "Image", "width": 0, "height": 0, "history": []}')
-    property list<string> details: []
+    property var details: JSON.parse('[]')
 
     modal: true
     focus: true

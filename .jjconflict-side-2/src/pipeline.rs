@@ -8,7 +8,8 @@ use std::{
 
 use crate::{
     protocol::{media, messages::Request},
-    script, utils,
+    script::{self, Script},
+    utils,
 };
 use eyre::{Report, Result};
 use sqlx::SqliteConnection;
@@ -104,6 +105,7 @@ impl Pipeline {
         let sources = task::spawn(
             async move {
                 for source in source_scripts {
+                    let mut state = 0;
                     loop {
                         let response: media::GenerateResponse = serde_json::from_value(
                             source
@@ -111,7 +113,8 @@ impl Pipeline {
                                     id: utils::generate_id(),
                                     method: media::GENERATE_METHOD.to_string(),
                                     params: serde_json::to_value(media::GenerateRequest {
-                                        batch_size: buffer_size.clone() as u32,
+                                        batch_size: buffer_size.clone(),
+                                        state,
                                     })?,
                                 })
                                 .await
@@ -122,6 +125,8 @@ impl Pipeline {
                             append_history(source.path.clone(), &mut media);
                             tx_s.send(media).await?;
                         }
+
+                        state += 1;
 
                         if response.finished {
                             break;

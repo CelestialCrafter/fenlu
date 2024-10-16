@@ -22,9 +22,9 @@ def handle_generate(params):
         initialized = True
 
     batch_size = params['batch_size']
+    state = params['state']
 
-    batch = files[:batch_size]
-    files = files[batch_size:]
+    batch = files[batch_size * state:batch_size * (state + 1)]
 
     media = []
     for path in batch:
@@ -41,9 +41,10 @@ def handle_generate(params):
             'type': 'Image'
         })
 
+    print(len(files), batch_size * (state + 1), file=sys.stderr)
     return {
         'media': media,
-        'finished': len(files) < 1
+        'finished': len(files) <= batch_size * (state + 1)
     }
 
 def handle_capabilities():
