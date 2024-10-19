@@ -21,6 +21,7 @@ target/
 /target
 
 scripts/config-*.toml
+scripts/exclude-*
 *.db
 *.db-journal
 config.toml
