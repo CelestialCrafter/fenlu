@@ -4,6 +4,7 @@ import QtQuick.Layouts 2.12
 
 Popup {
     // dont even ask
+    // @TODO remove this when json.parse is removed from MediaList.qml
     property var current: JSON.parse('{"title": "", "uri": "", "type": "Image", "width": 0, "height": 0, "history": []}')
     property real imageMaxWidth: 0.65
 
