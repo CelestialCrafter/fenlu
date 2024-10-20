@@ -8,7 +8,7 @@ use std::{
 
 use crate::{
     protocol::{media, messages::Request},
-    script::{self, Script},
+    script::{self},
     utils,
 };
 use eyre::{Report, Result};
@@ -16,7 +16,7 @@ use sqlx::SqliteConnection;
 use tokio::{
     join,
     sync::mpsc,
-    task::{self, JoinSet},
+    task::{self},
 };
 use tracing::{debug, instrument, Instrument};
 
@@ -56,7 +56,7 @@ pub struct Pipeline {
 
 impl Pipeline {
     pub async fn populate(&mut self) -> Result<()> {
-        let mut set = JoinSet::new();
+        let mut set = task::JoinSet::new();
 
         let servers = all_scripts().into_iter().map(|path| async move {
             (

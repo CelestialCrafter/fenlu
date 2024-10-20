@@ -9,7 +9,7 @@ Item {
 
         function onTotalChanged() {
             for (const item of FenluPipeline.items(previousTotal)) {
-                // @PERF json.parse is extremely slow and memory intensive
+                // @PERF json.parse is extremelyy memory intensive (~25% of total memory usage)
                 mediaModel.append({ media: JSON.parse(item) });
             }
 

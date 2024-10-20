@@ -138,6 +138,7 @@ impl qobject::FenluPipeline {
                     let mut serialized = batch
                         .into_iter()
                         .map(|media| {
+                            // @PERF qstring::from is extremelyy memory intensive (~15% of total memory usage)
                             QString::from(
                                 &serde_json::to_string(&media)
                                     .expect("media should encode to json"),

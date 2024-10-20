@@ -44,7 +44,7 @@ fn default_pipeline_mode() -> PipelineMode {
 }
 
 fn default_buffer_size() -> usize {
-    250
+    750
 }
 
 pub static CONFIG: LazyLock<Config> = LazyLock::new(|| {
