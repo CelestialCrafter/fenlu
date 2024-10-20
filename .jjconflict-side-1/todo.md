@@ -8,3 +8,4 @@
 - export pipeline output to file/clipboard
 - cross platform support (how will scripts work? theyre just shell scripts/python scripts with a shebang/binaries in most cases)
 - figure out distribution
+- think about switching script protocols from json
