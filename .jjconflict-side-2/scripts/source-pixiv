@@ -36,16 +36,15 @@ def handle_generate(params):
     if data["error"]:
         raise Exception(data["message"])
 
-    media = list(
-        map(
-            transform,
-            filter(
-                lambda post: post["illustType"] == 0
-                and post["updateDate"] != "1970-01-01T00:00:00+09:00",
-                data["body"]["works"],
-            ),
-        )
-    )
+    media = [
+        item
+        for post in filter(
+            lambda post: post["illustType"] == 0
+            and post["updateDate"] != "1970-01-01T00:00:00+09:00",
+            data["body"]["works"],
+            )
+        for item in transform(post)
+    ]
 
     return {"media": media, "finished": len(data["body"]["works"]) < max}
 
@@ -57,14 +56,14 @@ def transform(post):
         post["updateDate"].replace("-", "/").replace("T", "/").replace(":", "/"),
     )
 
-    return {
+    return [{
         "title": post["title"],
-        "uri": f'http://i.pximg.net/img-master/img/{date}/{post["id"]}_p0_master1200.jpg',
+        "uri": f'http://i.pximg.net/img-master/img/{date}/{post["id"]}_p{page}_master1200.jpg',
         "height": post["width"],
         "width": post["height"],
         "type": "Image",
         "tags": post["tags"],
-    }
+    } for page in range(post["pageCount"])]
 
 
 def handle_capabilities():
@@ -88,7 +87,7 @@ for line in sys.stdin:
                 result = handle_capabilities()
             case "media/generate":
                 time.sleep(config["request_delay"])
-                result = handle_generate()
+                result = handle_generate(params)
             case _:
                 raise Exception("unknown method")
     except Exception:
