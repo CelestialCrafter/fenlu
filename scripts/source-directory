@@ -41,7 +41,6 @@ def handle_generate(params):
             'type': 'Image'
         })
 
-    print(len(files), batch_size * (state + 1), file=sys.stderr)
     return {
         'media': media,
         'finished': len(files) <= batch_size * (state + 1)
@@ -73,7 +72,7 @@ for line in sys.stdin:
                     result = handle_generate(params)
             case _:
                 raise Exception("unknown method")
-    except Exception as e:
+    except Exception:
                 result = None
                 error = traceback.format_exc()
 
