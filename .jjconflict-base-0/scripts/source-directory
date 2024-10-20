@@ -36,8 +36,8 @@ def handle_generate(params):
         media.append({
             'title': os.path.basename(path),
             'uri': 'file://' + quote(path),
-            'height': image.width,
-            'width': image.height,
+            'width': image.width,
+            'height': image.height,
             'type': 'Image'
         })
 
