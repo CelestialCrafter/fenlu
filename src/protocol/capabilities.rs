@@ -20,6 +20,7 @@ pub struct Query {
 pub struct Capabilities {
     pub media: (Type, Option<u64>),
     pub query: Query,
+    pub actions: Vec<String>
 }
 
 pub const CAPABILITIES_METHOD: &str = "capabilities/capabilities";
