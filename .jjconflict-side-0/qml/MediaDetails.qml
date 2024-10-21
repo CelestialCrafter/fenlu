@@ -14,6 +14,7 @@ Popup {
     width: window.width * 0.7
     height: window.height * 0.5
     onAboutToShow: {
+        // @TODO fix markdown injection
         let text = [];
         text.push(`Title: *${current.title}*`);
 
@@ -24,27 +25,22 @@ Popup {
                 break;
             case 'PDF':
                 text.push(`Author: *${current.author}*`);
-                text.push(`Summary: *${current.summary}*`);
+                const trimAt = 100
+                const truncated = current.summary.length > trimAt ? `${current.summary.substring(0, trimAt)}...` : current.summary;
+                text.push(`Summary: *${truncated.trim()}*`);
                 break;
         }
 
-        text.push('');
-        text.push('History:');
-        text = text.concat(current.history.map(f => `*${f}*`));
+        text.push('History:<br />' + current.history.map(f => `*${f}*`).join('<br />'));
 
-        if (current.tags.length > 0) {
-            text.push('');
-            text.push('Tags:');
-            text = text.concat(current.tags.map(f => `*${f}*`));
-        }
+        if (current.tags.length > 0) text.push('Tags:<br />' + current.tags.map(f => `*${f}*`).join('<br />'));
 
-        details.text = text.join('<br />');
+        details.text = text.join('<br /><br />');
         media.media = current;
     }
 
     RowLayout {
         anchors.fill: parent
-        clip: true
 
         Media {
             media: current
@@ -57,12 +53,13 @@ Popup {
         Text {
             id: details
             Layout.fillWidth: true
-            textFormat: Text.MarkdownText
             Layout.fillHeight: true
-            clip: true
             Layout.maximumWidth: parent.width * (1 - imageMaxWidth)
             verticalAlignment: Text.AlignVCenter
             horizontalAlignment: Text.AlignRight
+            textFormat: Text.MarkdownText
+            wrapMode: Text.Wrap
+            clip: true
         }
     }
 }
