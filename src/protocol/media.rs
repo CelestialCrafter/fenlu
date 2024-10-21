@@ -5,8 +5,6 @@ pub struct Media {
     pub title: String,
     pub uri: String,
     #[serde(default)]
-    pub extra_source: String,
-    #[serde(default)]
     pub history: Vec<String>,
     #[serde(default)]
     pub tags: Vec<String>,
