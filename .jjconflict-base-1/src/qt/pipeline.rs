@@ -42,14 +42,13 @@ use std::{
 };
 
 use cxx_qt_lib::QString;
-use futures::executor::block_on;
 use qobject::{FenluPipeline, FenluPipelineCxxQtThread, QSet_QString};
-use tokio::{sync::mpsc, task};
+use tokio::{sync::mpsc, task::{self}};
 use tracing::{debug, info, instrument, Instrument};
 
 use crate::{
     config::CONFIG,
-    pipeline::{Pipeline, GLOBAL_PIPELINE},
+    pipeline::GLOBAL_PIPELINE,
     protocol::{messages::Request, query},
     utils,
 };
@@ -59,7 +58,6 @@ pub struct Media {
     total: usize,
     running: bool,
     items: Arc<RwLock<Vec<QString>>>,
-    pipeline: Arc<Pipeline>,
 }
 
 fn render(thread: &FenluPipelineCxxQtThread, total: usize) {
@@ -79,7 +77,7 @@ fn set_running(thread: &FenluPipelineCxxQtThread, running: bool) {
     thread
         .queue(move |mut media| media.as_mut().set_running(running))
         .expect("could not queue update");
-}
+    }
 
 impl qobject::FenluPipeline {
     pub fn items(&self, at: usize) -> QSet_QString {
@@ -95,7 +93,7 @@ impl qobject::FenluPipeline {
 
     pub fn queryable_scripts(&self) -> QSet_QString {
         let mut set = QSet_QString::default();
-        self.pipeline
+        GLOBAL_PIPELINE
             .scripts
             .iter()
             .filter(|(_, script)| script.capabilities.query.set)
@@ -106,20 +104,18 @@ impl qobject::FenluPipeline {
 
     pub fn set_query(&self, script: QString, query: QString) {
         info!(script = ?script, query = ?query,"setting query");
-        block_on(
-            self.pipeline
-                .scripts
-                .get(&script.to_string())
-                .expect("script should exist")
-                .request(Request {
-                    id: utils::generate_id(),
-                    method: query::QUERY_SET_METHOD.to_string(),
-                    params: serde_json::to_value(query::QueryRequest {
-                        query: query.to_string(),
-                    })
-                    .expect("could not set query"),
-                }),
-        );
+        task::spawn(GLOBAL_PIPELINE
+            .scripts
+            .get(&script.to_string())
+            .expect("script should exist")
+            .request(Request {
+                id: utils::generate_id(),
+                method: query::QUERY_SET_METHOD.to_string(),
+                params: serde_json::to_value(query::QueryRequest {
+                    query: query.to_string(),
+                })
+                .expect("could not set query"),
+            }));
     }
 
     #[instrument(skip(self), name = "pipeline")]
