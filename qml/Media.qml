@@ -19,6 +19,7 @@ Image {
         bottomPadding: 5
         fontSizeMode: Text.Fit
         elide: Text.ElideRight
+        wrapMode: Text.Wrap
 
         text: media.title
         color: "white"
