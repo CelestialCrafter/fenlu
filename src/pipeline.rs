@@ -3,7 +3,7 @@ use std::{
     fs::{read_dir, File},
     io::ErrorKind,
     path::PathBuf,
-    sync::Arc,
+    sync::{Arc, LazyLock},
 };
 
 use crate::{
@@ -14,13 +14,17 @@ use crate::{
 use eyre::{Report, Result};
 use sqlx::SqliteConnection;
 use tokio::{
-    join,
-    sync::mpsc,
-    task::{self},
+    join, sync::mpsc, task::{self}
 };
 use tracing::{debug, instrument, Instrument};
 
 pub const DB_PATH: &str = "fenlu.db";
+
+pub static GLOBAL_PIPELINE: LazyLock<Pipeline> = LazyLock::new(|| {
+        let mut pipeline = Pipeline::default();
+        pipeline.populate().expect("could not populate pipeline");
+        pipeline
+});
 
 fn create_db_file() -> Result<()> {
     match File::create_new(DB_PATH) {
@@ -55,22 +59,11 @@ pub struct Pipeline {
 }
 
 impl Pipeline {
-    pub async fn populate(&mut self) -> Result<()> {
-        let mut set = task::JoinSet::new();
+    pub fn populate(&mut self) -> Result<()> {
+        for path in all_scripts() {
+            let name = utils::path_to_name(&path);
+            let script = script::spawn_server(&path);
 
-        let servers = all_scripts().into_iter().map(|path| async move {
-            (
-                utils::path_to_name(&path),
-                script::spawn_server(&path).await,
-            )
-        });
-
-        for future in servers {
-            set.spawn(future);
-        }
-
-        while let Some(result) = set.join_next().await {
-            let (name, script) = result?;
             self.scripts.insert(name, script?);
         }
 

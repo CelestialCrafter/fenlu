@@ -40,7 +40,7 @@ impl Script {
     }
 }
 
-pub async fn spawn_server(path: &PathBuf) -> Result<Arc<Script>> {
+pub fn spawn_server(path: &PathBuf) -> Result<Arc<Script>> {
     let path = path.canonicalize()?;
 
     let mut dir = path.clone();
