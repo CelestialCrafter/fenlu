@@ -8,7 +8,7 @@
 
 ## medium priority
 
-- export pipeline output to file/clipboard
+- import/export pipeline output from/to file/clipboard
 - theming + default themes (rose pine, cattppuccin, gruvbox, tokyo night, nord)
 - better styling
 
