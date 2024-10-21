@@ -1,11 +1,12 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Debug, Default)]
-#[serde(default)]
-pub struct Media {
-    pub source: (bool, Option<u64>),
-    pub transform: (bool, Option<u64>),
-    pub filter: (bool, Option<u64>),
+#[serde(rename_all = "camelCase")]
+pub enum Type {
+    #[default]
+    Source,
+    Transform,
+    Filter,
 }
 
 #[derive(Deserialize, Debug, Default)]
@@ -17,7 +18,7 @@ pub struct Query {
 #[derive(Deserialize, Debug, Default)]
 #[serde(default)]
 pub struct Capabilities {
-    pub media: Media,
+    pub media: (Type, Option<u64>),
     pub query: Query,
 }
 

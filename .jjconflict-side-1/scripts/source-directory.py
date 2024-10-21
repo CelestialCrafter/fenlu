@@ -24,10 +24,8 @@ def handle_generate(params):
     batch_size = params['batch_size']
     state = params['state']
 
-    batch = files[batch_size * state:batch_size * (state + 1)]
-
     media = []
-    for path in batch:
+    for path in files[batch_size * state:batch_size * (state + 1)]:
         try:
             image = Image.open(path)
         except UnidentifiedImageError:
@@ -47,11 +45,7 @@ def handle_generate(params):
     }
 
 def handle_capabilities():
-    return {
-        'media': {
-            'source': (True, None)
-        }
-    }
+    return { 'media': ('source', None) }
 
 for line in sys.stdin:
     # strip off EOF

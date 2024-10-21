@@ -6,7 +6,7 @@ use std::{
 };
 
 use crate::{
-    protocol::{media, messages::Request},
+    protocol::{capabilities, media, messages::Request},
     script::{self},
     utils,
 };
@@ -58,12 +58,10 @@ impl Pipeline {
         let mut filter_scripts = vec![];
 
         for script in self.scripts.values() {
-            if script.capabilities.media.source.0 {
-                source_scripts.push(script.clone());
-            } else if script.capabilities.media.transform.0 {
-                transform_scripts.push(script.clone());
-            } else if script.capabilities.media.filter.0 {
-                filter_scripts.push(script.clone());
+            match script.capabilities.media.0 {
+                capabilities::Type::Source => source_scripts.push(script.clone()),
+                capabilities::Type::Transform => transform_scripts.push(script.clone()),
+                capabilities::Type::Filter => filter_scripts.push(script.clone()),
             }
         }
 
@@ -101,7 +99,7 @@ impl Pipeline {
                             break;
                         }
 
-                        if let Some(ms) = source.capabilities.media.source.1 {
+                        if let Some(ms) = source.capabilities.media.1 {
                             time::sleep(Duration::from_millis(ms)).await;
                         }
                     }
@@ -139,7 +137,7 @@ impl Pipeline {
                             append_history(transform.path.clone(), &mut buffer[i]);
                         }
 
-                        if let Some(ms) = transform.capabilities.media.transform.1 {
+                        if let Some(ms) = transform.capabilities.media.1 {
                             time::sleep(Duration::from_millis(ms)).await;
                         }
                     }
@@ -188,7 +186,7 @@ impl Pipeline {
                             append_history(filter.path.clone(), &mut buffer[i]);
                         }
 
-                        if let Some(ms) = filter.capabilities.media.filter.1 {
+                        if let Some(ms) = filter.capabilities.media.1 {
                             time::sleep(Duration::from_millis(ms)).await;
                         }
                     }

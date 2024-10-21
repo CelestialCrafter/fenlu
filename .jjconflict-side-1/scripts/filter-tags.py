@@ -39,9 +39,7 @@ def handle_filter(params):
 
 def handle_capabilities():
     return {
-        'media': {
-            'filter': (True, None)
-        },
+        'media': ('filter', None),
         'query': {
             'set': True
         }

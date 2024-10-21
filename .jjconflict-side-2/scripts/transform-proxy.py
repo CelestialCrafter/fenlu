@@ -9,11 +9,7 @@ with open('config-transform-proxy.toml', 'rb') as file:
     config = tomllib.load(file)
 
 def handle_capabilities():
-    return {
-        'media': {
-            'transform': (True, None)
-        }
-    }
+    return { 'media': ('transform', None) }
 
 def transform(media):
     suffix = ''

@@ -41,7 +41,6 @@ impl Script {
 pub fn determine_command(path: &PathBuf) -> Command {
     let ext = path.extension().map(|osstr| osstr.to_str().unwrap());
 
-    debug!(p = ?path, "path");
     match ext {
         Some("py") => {
             let mut cmd = Command::new("python");
