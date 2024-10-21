@@ -3,7 +3,6 @@
 ## high priority
 
 - actions protocol + impls
-- finish adapting scripts (offload to claude)
 
 ## medium priority
 
