@@ -18,33 +18,62 @@ def apply_op(lhs, rhs, op):
         '!': lambda x, y: x != y,
         '=': lambda x, y: x == y
     }
-    
+
     return ops.get(op, lambda x, y: default)(lhs, rhs)
 
-def parse_conditions(query):
-    return re.findall(r'([wh]) ([<>!=]+) (\w+);', query)
+conditions = []
 
-query = sys.argv[1]
-for line in sys.stdin:
-    line = line.rstrip()
-    if query == '':
-        print(line)
-        continue
+def handle_query(params):
+    global conditions
+    conditions = re.findall(r'([wh]) ([<>!=]+) (\d+);', params['query'])
+    return
 
-    media = json.loads(line)
-    if media['type'] != 'Image':
-        print(line)
-        continue
-    
-    ops = [
-        apply_op(
-            media['width'] if lhs == 'w' else media['height'],
-            int(rhs),
-            op
-        )
-        for lhs, op, rhs in parse_conditions(query)
+def handle_filter(params):
+    global conditions
+    return [
+        all(
+            apply_op(
+                media['width'] if lhs == 'w' else media['height'],
+                int(rhs),
+                op
+            )
+            for lhs, op, rhs in conditions
+        ) if media['type'] == 'Image' else True
+        for media in params
     ]
 
-    if all(ops):
-        print(line)
+def handle_capabilities():
+    return {
+        'media': {
+            'filter': (True, None)
+        },
+        'query': {
+            'set': True
+        }
+    }
 
+for line in sys.stdin:
+    line = line.rstrip()
+
+    request = json.loads(line)
+    params = request['params']
+    id = request['id']
+
+    result = {}
+    error = None
+
+    match request['method']:
+        case 'capabilities/capabilities':
+            result = handle_capabilities()
+        case 'query/set':
+            result = handle_query(params)
+        case 'media/filter':
+            result = handle_filter(params)
+        case _:
+            raise Exception("unknown method")
+
+    print(json.dumps({
+        'id': id,
+        'result': result,
+        'error': error
+    }))
