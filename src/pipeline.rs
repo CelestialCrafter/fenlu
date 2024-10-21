@@ -1,7 +1,6 @@
 use std::{
     collections::HashMap,
-    fs::{read_dir, File},
-    io::ErrorKind,
+    fs::read_dir,
     path::PathBuf,
     sync::{Arc, LazyLock},
 };
@@ -12,7 +11,6 @@ use crate::{
     utils,
 };
 use eyre::{Report, Result};
-use sqlx::SqliteConnection;
 use tokio::{
     join, sync::mpsc, task::{self}
 };
@@ -25,28 +23,6 @@ pub static GLOBAL_PIPELINE: LazyLock<Pipeline> = LazyLock::new(|| {
         pipeline.populate().expect("could not populate pipeline");
         pipeline
 });
-
-fn create_db_file() -> Result<()> {
-    match File::create_new(DB_PATH) {
-        Ok(_) => Ok(()),
-        Err(error) => match error.kind() {
-            ErrorKind::AlreadyExists => Ok(()),
-            _ => Err(error.into()),
-        },
-    }
-}
-
-async fn create_media_table(conn: &mut SqliteConnection) -> Result<()> {
-    sqlx::query(
-        "CREATE TABLE IF NOT EXISTS media (
-            uri TEXT PRIMARY KEY,
-            metadata TEXT NOT NULL
-        )",
-    )
-    .execute(conn)
-    .await?;
-    Ok(())
-}
 
 pub fn append_history(path: PathBuf, media: &mut media::Media) {
     let name = utils::path_to_name(&path);
