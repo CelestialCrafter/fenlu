@@ -16,6 +16,7 @@ pub mod qobject {
         #[qml_element]
         #[qml_singleton]
         #[qproperty(usize, total)]
+        #[qproperty(bool, running)]
         type FenluPipeline = super::Media;
     }
 
@@ -27,7 +28,7 @@ pub mod qobject {
         #[qinvokable]
         fn set_query(self: &FenluPipeline, script: QString, query: QString);
         #[qinvokable]
-        fn handle_pipeline(self: Pin<&mut FenluPipeline>);
+        fn run_pipeline(self: Pin<&mut FenluPipeline>);
     }
 
     impl cxx_qt::Threading for FenluPipeline {}
@@ -48,7 +49,7 @@ use tracing::{debug, info, instrument, Instrument};
 
 use crate::{
     config::CONFIG,
-    pipeline::Pipeline,
+    pipeline::{Pipeline, GLOBAL_PIPELINE},
     protocol::{messages::Request, query},
     utils,
 };
@@ -56,14 +57,27 @@ use crate::{
 #[derive(Default)]
 pub struct Media {
     total: usize,
+    running: bool,
     items: Arc<RwLock<Vec<QString>>>,
     pipeline: Arc<Pipeline>,
 }
 
-fn render(thread: FenluPipelineCxxQtThread, total: usize) {
+fn render(thread: &FenluPipelineCxxQtThread, total: usize) {
     debug!(total = ?total, "rendering media");
     thread
         .queue(move |mut media| media.as_mut().set_total(total))
+        .expect("could not queue update");
+}
+
+fn set_running(thread: &FenluPipelineCxxQtThread, running: bool) {
+    if running {
+        info!("pipeline started");
+    } else {
+        info!("pipeline finished");
+    }
+
+    thread
+        .queue(move |mut media| media.as_mut().set_running(running))
         .expect("could not queue update");
 }
 
@@ -109,68 +123,74 @@ impl qobject::FenluPipeline {
     }
 
     #[instrument(skip(self), name = "pipeline")]
-    pub fn handle_pipeline(self: Pin<&mut Self>) {
+    pub fn run_pipeline(self: Pin<&mut Self>) {
         let qthread = self.cxx_qt_ffi_qt_thread();
 
         let (tx, mut rx) = mpsc::channel(CONFIG.buffer_size);
         let items = self.items.clone();
 
-        let pipeline = self.pipeline.clone();
-
-        task::spawn(async move {
-            pipeline
-                .start(CONFIG.buffer_size, tx)
-                .await
-                .expect("could not run pipeline");
-        });
+        {
+            let qthread = qthread.clone();
+            task::spawn(async move {
+                // @TODO probably should use RAII for set_running
+                set_running(&qthread, true);
+                GLOBAL_PIPELINE
+                    .start(CONFIG.buffer_size, tx)
+                    .await
+                    .expect("could not run pipeline");
+                set_running(&qthread, false);
+            });
+        };
 
         task::spawn(
             async move {
                 let mut last_update = Instant::now();
+
                 loop {
+                    // take in new batches
                     let mut batch = Vec::with_capacity(CONFIG.buffer_size);
                     if rx.recv_many(&mut batch, CONFIG.buffer_size).await == 0 {
                         break;
                     }
+                    let amount = batch.len();
 
-                    info!(amount = ?batch.len(), "received new batch");
-
+                    // serialize new batch
                     let mut serialized = batch
                         .into_iter()
                         .map(|media| {
-                            // @PERF qstring::from is extremelyy memory intensive (~15% of total memory usage)
+                            // @PERF qstring::from is extremely memory intensive (~15% of total memory usage)
                             QString::from(
                                 &serde_json::to_string(&media)
-                                    .expect("media should encode to json"),
+                                .expect("media should encode to json"),
                             )
                         })
-                        .collect();
+                    .collect();
 
                     let mut items = items.write().unwrap();
                     items.append(&mut serialized);
 
+                    // tell frontend to update if media_update_interval has passed
                     let now = Instant::now();
                     if now.duration_since(last_update).as_millis()
                         > CONFIG.media_update_interval.into()
                     {
                         last_update = now;
-                        render(qthread.clone(), items.len());
+                        render(&qthread, items.len());
                     }
+
+                    info!(amount = ?amount, "processed batch");
                 }
 
                 let items = items.read().unwrap();
-                render(qthread.clone(), items.len());
+                render(&qthread, items.len());
             }
-            .in_current_span(),
+        .in_current_span(),
         );
     }
 }
 
 impl cxx_qt::Initialize for FenluPipeline {
-    fn initialize(mut self: Pin<&mut Self>) {
-        let mut pipeline = Pipeline::default();
-        block_on(pipeline.populate()).expect("could not populate pipeline");
-        self.as_mut().cxx_qt_ffi_rust_mut().pipeline = Arc::new(pipeline);
-        self.handle_pipeline();
+    fn initialize(self: Pin<&mut Self>) {
+        self.run_pipeline();
     }
 }
