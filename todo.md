@@ -14,6 +14,7 @@
 
 ## low priority
 
+- let scripts attatch their own data into their history entry
 - cross platform support (how will scripts work? theyre just shell scripts/python scripts with a shebang/binaries)
 - figure out distribution
 
