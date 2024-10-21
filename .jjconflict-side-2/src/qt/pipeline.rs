@@ -128,7 +128,7 @@ impl qobject::FenluPipeline {
         {
             let qthread = qthread.clone();
             task::spawn(async move {
-                // @TODO probably should use RAII for set_running
+                // @FIX probably should use RAII for set_running
                 set_running(&qthread, true);
                 GLOBAL_PIPELINE
                     .start(CONFIG.buffer_size, tx)

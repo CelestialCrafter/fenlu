@@ -1,8 +1,5 @@
 use std::{
-    io::{BufRead, BufReader, BufWriter, Write},
-    path::PathBuf,
-    process::{Command, Stdio},
-    sync::Arc,
+    io::{BufRead, BufReader, BufWriter, Write}, path::PathBuf, process::{Command, Stdio}, sync::Arc
 };
 
 use dashmap::DashMap;
@@ -40,15 +37,33 @@ impl Script {
     }
 }
 
+// @FIX this seems hacky
+pub fn determine_command(path: &PathBuf) -> Command {
+    let ext = path.extension().map(|osstr| osstr.to_str().unwrap());
+
+    debug!(p = ?path, "path");
+    match ext {
+        Some("py") => {
+            let mut cmd = Command::new("python");
+            cmd.arg(path).env("PYTHONUNBUFFERED", "1");
+            cmd
+        },
+        Some(".js") => {
+            let mut cmd = Command::new("node");
+            cmd.arg(path);
+            cmd
+        },
+        _ => Command::new(path),
+    }
+}
 pub fn spawn_server(path: &PathBuf) -> Result<Arc<Script>> {
     let path = path.canonicalize()?;
 
     let mut dir = path.clone();
     dir.pop();
 
-    let mut child = Command::new(path.clone())
+    let mut child = determine_command(&path)
         .current_dir(dir)
-        .env("PYTHONUNBUFFERED", "1")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()?;
