@@ -19,10 +19,10 @@ def transform(media):
     suffix = ''
     if 'source-pixiv' in media['history']:
         suffix = "pixiv"
-    if 'source-kemono' in media['history']:
+    elif 'source-kemono' in media['history']:
         suffix = "kemono"
-    if 'source-arxiv' in media['history']:
-        suffix = "arxiv"
+    else:
+        return media
 
     uri = urlparse(media['uri'])
     if 'http' in uri.scheme:
