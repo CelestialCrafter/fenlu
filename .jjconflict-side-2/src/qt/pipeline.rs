@@ -125,6 +125,13 @@ impl qobject::FenluPipeline {
         let (tx, mut rx) = mpsc::channel(CONFIG.buffer_size);
         let items = self.items.clone();
 
+        // clear previous run
+        {
+            self.set_total(0);
+            let mut items = items.write().unwrap();
+            items.clear();
+        }
+
         {
             let qthread = qthread.clone();
             task::spawn(async move {

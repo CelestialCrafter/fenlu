@@ -11,7 +11,7 @@ with open('config-transform-proxy.toml', 'rb') as file:
 def handle_capabilities():
     return {
         'media': {
-            'transform': True
+            'transform': (True, None)
         }
     }
 

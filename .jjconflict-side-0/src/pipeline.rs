@@ -2,7 +2,7 @@ use std::{
     collections::HashMap,
     fs::read_dir,
     path::PathBuf,
-    sync::{Arc, LazyLock},
+    sync::{Arc, LazyLock}, time::Duration,
 };
 
 use crate::{
@@ -12,16 +12,16 @@ use crate::{
 };
 use eyre::{Report, Result};
 use tokio::{
-    join, sync::mpsc, task::{self}
+    join, sync::mpsc, task::{self}, time
 };
 use tracing::{debug, instrument, Instrument};
 
 pub const DB_PATH: &str = "fenlu.db";
 
 pub static GLOBAL_PIPELINE: LazyLock<Pipeline> = LazyLock::new(|| {
-        let mut pipeline = Pipeline::default();
-        pipeline.populate().expect("could not populate pipeline");
-        pipeline
+    let mut pipeline = Pipeline::default();
+    pipeline.populate().expect("could not populate pipeline");
+    pipeline
 });
 
 pub fn append_history(path: PathBuf, media: &mut media::Media) {
@@ -58,11 +58,11 @@ impl Pipeline {
         let mut filter_scripts = vec![];
 
         for script in self.scripts.values() {
-            if script.capabilities.media.source {
+            if script.capabilities.media.source.0 {
                 source_scripts.push(script.clone());
-            } else if script.capabilities.media.transform {
+            } else if script.capabilities.media.transform.0 {
                 transform_scripts.push(script.clone());
-            } else if script.capabilities.media.filter {
+            } else if script.capabilities.media.filter.0 {
                 filter_scripts.push(script.clone());
             }
         }
@@ -78,16 +78,16 @@ impl Pipeline {
                     loop {
                         let response: media::GenerateResponse = serde_json::from_value(
                             source
-                                .request(Request {
-                                    id: utils::generate_id(),
-                                    method: media::GENERATE_METHOD.to_string(),
-                                    params: serde_json::to_value(media::GenerateRequest {
-                                        batch_size: buffer_size.clone(),
-                                        state,
-                                    })?,
-                                })
-                                .await
-                                .result()?,
+                            .request(Request {
+                                id: utils::generate_id(),
+                                method: media::GENERATE_METHOD.to_string(),
+                                params: serde_json::to_value(media::GenerateRequest {
+                                    batch_size: buffer_size.clone(),
+                                    state,
+                                })?,
+                            })
+                            .await
+                            .result()?,
                         )?;
 
                         for mut media in response.media {
@@ -100,6 +100,10 @@ impl Pipeline {
                         if response.finished {
                             break;
                         }
+
+                        if let Some(ms) = source.capabilities.media.source.1 {
+                            time::sleep(Duration::from_millis(ms)).await;
+                        }
                     }
                 }
 
@@ -107,7 +111,7 @@ impl Pipeline {
 
                 Ok::<_, Report>(())
             }
-            .in_current_span(),
+        .in_current_span(),
         );
 
         // transforms
@@ -122,17 +126,21 @@ impl Pipeline {
                     for transform in transform_scripts.clone() {
                         buffer = serde_json::from_value(
                             transform
-                                .request(Request {
-                                    id: utils::generate_id(),
-                                    method: media::TRANSFORM_METHOD.to_string(),
-                                    params: serde_json::to_value(buffer)?,
-                                })
-                                .await
-                                .result()?,
+                            .request(Request {
+                                id: utils::generate_id(),
+                                method: media::TRANSFORM_METHOD.to_string(),
+                                params: serde_json::to_value(buffer)?,
+                            })
+                            .await
+                            .result()?,
                         )?;
 
                         for i in 0..buffer.len() {
                             append_history(transform.path.clone(), &mut buffer[i]);
+                        }
+
+                        if let Some(ms) = transform.capabilities.media.transform.1 {
+                            time::sleep(Duration::from_millis(ms)).await;
                         }
                     }
 
@@ -145,7 +153,7 @@ impl Pipeline {
 
                 Ok::<_, Report>(())
             }
-            .in_current_span(),
+        .in_current_span(),
         );
 
         // filters
@@ -160,13 +168,13 @@ impl Pipeline {
                     for filter in filter_scripts.clone() {
                         let response: media::FilterResponse = serde_json::from_value(
                             filter
-                                .request(Request {
-                                    id: utils::generate_id(),
-                                    method: media::FILTER_METHOD.to_string(),
-                                    params: serde_json::to_value(buffer.clone())?,
-                                })
-                                .await
-                                .result()?,
+                            .request(Request {
+                                id: utils::generate_id(),
+                                method: media::FILTER_METHOD.to_string(),
+                                params: serde_json::to_value(buffer.clone())?,
+                            })
+                            .await
+                            .result()?,
                         )?;
 
                         buffer = buffer
@@ -179,6 +187,10 @@ impl Pipeline {
                         for i in 0..buffer.len() {
                             append_history(filter.path.clone(), &mut buffer[i]);
                         }
+
+                        if let Some(ms) = filter.capabilities.media.filter.1 {
+                            time::sleep(Duration::from_millis(ms)).await;
+                        }
                     }
 
                     for media in buffer {
@@ -190,7 +202,7 @@ impl Pipeline {
 
                 Ok::<_, Report>(())
             }
-            .in_current_span(),
+        .in_current_span(),
         );
 
         let joined = join!(sources, transforms, filters);

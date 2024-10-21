@@ -21,7 +21,7 @@ query = ''
 def handle_query(params):
     global query
     query = params['query']
-    return { 'query': query }
+    return
 
 def handle_generate(params):
     global query
@@ -44,7 +44,7 @@ def handle_generate(params):
     }
 
 def handle_capabilities():
-    return {"media": {"source": True}, "query": {"set": True}}
+    return {"media": {"source": (True, None)}, "query": {"set": True}}
 
 for line in sys.stdin:
     # strip off EOF

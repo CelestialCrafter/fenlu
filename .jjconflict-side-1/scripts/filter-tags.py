@@ -28,11 +28,10 @@ tags = []
 def handle_query(params):
     global tags
 
-    query = params['query']
-    tags = query.split(';')
+    tags = params['query'].split(';')
     tags = tags[:len(tags) - 1]
 
-    return { 'query': query }
+    return
 
 def handle_filter(params):
     global tags
@@ -41,7 +40,7 @@ def handle_filter(params):
 def handle_capabilities():
     return {
         'media': {
-            'filter': True
+            'filter': (True, None)
         },
         'query': {
             'set': True

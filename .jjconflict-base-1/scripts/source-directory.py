@@ -49,7 +49,7 @@ def handle_generate(params):
 def handle_capabilities():
     return {
         'media': {
-            'source': True
+            'source': (True, None)
         }
     }
 

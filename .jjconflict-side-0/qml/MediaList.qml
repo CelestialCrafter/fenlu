@@ -8,6 +8,12 @@ Item {
         property var previousTotal: 0
 
         function onTotalChanged() {
+            if (FenluPipeline.total == 0) {
+                mediaModel.clear();
+                previousTotal = 0;
+                return;
+            }
+
             for (const item of FenluPipeline.items(previousTotal)) {
                 // @PERF json.parse is extremelyy memory intensive (~25% of total memory usage)
                 mediaModel.append({ media: JSON.parse(item) });

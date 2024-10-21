@@ -4,12 +4,6 @@ import QtQuick.Layouts 2.12
 import fenlu 1.0
 
 Item {
-    function runPipeline() {
-        FenluPipeline.setTotal(0);
-        mediaModel.clear();
-        FenluPipeline.runPipeline();
-    }
-
     Rectangle {
         anchors.fill: parent
     }
@@ -45,6 +39,6 @@ Item {
         enabled: !FenluPipeline.running
         id: rerun
         text: "Re-Run Pipeline"
-        onClicked: runPipeline()
+        onClicked: FenluPipeline.runPipeline()
     }
 }

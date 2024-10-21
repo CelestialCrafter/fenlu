@@ -3,9 +3,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Deserialize, Debug, Default)]
 #[serde(default)]
 pub struct Media {
-    pub source: bool,
-    pub transform: bool,
-    pub filter: bool,
+    pub source: (bool, Option<u64>),
+    pub transform: (bool, Option<u64>),
+    pub filter: (bool, Option<u64>),
 }
 
 #[derive(Deserialize, Debug, Default)]

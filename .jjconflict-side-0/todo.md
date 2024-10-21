@@ -2,7 +2,6 @@
 
 ## high priority
 
-- handle rate limiting (capabilities?)
 - actions protocol + impls
 - finish adapting scripts (offload to claude)
 
