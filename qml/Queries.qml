@@ -7,7 +7,7 @@ Item {
     function runPipeline() {
         FenluPipeline.setTotal(0);
         mediaModel.clear();
-        FenluPipeline.handlePipeline();
+        FenluPipeline.runPipeline();
     }
 
     Rectangle {
@@ -42,6 +42,7 @@ Item {
 
     Button {
         anchors.right: parent.right
+        enabled: !FenluPipeline.running
         id: rerun
         text: "Re-Run Pipeline"
         onClicked: runPipeline()
