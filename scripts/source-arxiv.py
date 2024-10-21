@@ -44,7 +44,7 @@ def handle_generate(params):
     }
 
 def handle_capabilities():
-    return {"media": {"source": (True, None)}, "query": {"set": True}}
+    return {"media": ("source", None), "query": {"set": True}}
 
 for line in sys.stdin:
     # strip off EOF
