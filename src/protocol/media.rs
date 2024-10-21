@@ -1,10 +1,9 @@
-use fluent_uri::UriRef;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Media {
     pub title: String,
-    pub uri: UriRef<String>,
+    pub uri: String,
     #[serde(default)]
     pub extra_source: String,
     #[serde(default)]
