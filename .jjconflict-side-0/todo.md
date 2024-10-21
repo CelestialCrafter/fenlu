@@ -2,7 +2,6 @@
 
 ## high priority
 
-- common library for python scripts
 - actions protocol + impls
 
 ## medium priority

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-import sys
-import json
+from common import listen
 
 def has_tag(tags, desired):
     return any(tag == desired for tag in tags)
@@ -37,7 +36,7 @@ def handle_filter(params):
     global tags
     return list(map(lambda media: len(tags) == 0 or has_tags(media['tags'], tags), params))
 
-def handle_capabilities():
+def handle_capabilities(_):
     return {
         'media': ('filter', None),
         'query': {
@@ -45,30 +44,8 @@ def handle_capabilities():
         }
     }
 
-for line in sys.stdin:
-    # strip off EOF
-    line = line.rstrip()
-
-    request = json.loads(line)
-    params = request['params']
-    id = request['id']
-
-    result = {}
-    error = None
-
-    match request['method']:
-        case 'capabilities/capabilities':
-            result = handle_capabilities()
-        case 'query/set':
-            result = handle_query(params)
-        case 'media/filter':
-            result = handle_filter(params)
-        case _:
-            result = None
-            error = "unknown method"
-
-    print(json.dumps({
-        'id': id,
-        'result': result,
-        'error': error
-    }))
+listen({
+    'capabilities/capabilities': handle_capabilities,
+    'query/set': handle_query,
+    'media/filter': handle_filter
+})

@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 
-import sys
-import traceback
 import requests
-import json
 from xml.etree import ElementTree
+
+from common import listen
 
 def transform(paper):
     return {
@@ -43,32 +42,11 @@ def handle_generate(params):
         'finished': True,
     }
 
-def handle_capabilities():
-    return {"media": ("source", None), "query": {"set": True}}
+def handle_capabilities(_):
+    return {'media': ('source', None), 'query': {'set': True}}
 
-for line in sys.stdin:
-    # strip off EOF
-    line = line.rstrip()
-
-    request = json.loads(line)
-    params = request["params"]
-    id = request["id"]
-
-    result = {}
-    error = None
-
-    try:
-        match request["method"]:
-            case "capabilities/capabilities":
-                result = handle_capabilities()
-            case "media/generate":
-                result = handle_generate(params)
-            case "query/set":
-                result = handle_query(params)
-            case _:
-                raise Exception("unknown method")
-    except Exception:
-        result = None
-        error = traceback.format_exc()
-
-    print(json.dumps({"id": id, "result": result, "error": error}))
+listen({
+    'capabilities/capabilities': handle_capabilities,
+    'media/generate': handle_generate,
+    'query/set': handle_query
+})

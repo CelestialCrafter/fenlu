@@ -1,15 +1,12 @@
 #!/usr/bin/env python
 
-import sys
-import json
 import tomllib
 from urllib.parse import urlparse, urlunparse
 
+from common import listen
+
 with open('config-transform-proxy.toml', 'rb') as file:
     config = tomllib.load(file)
-
-def handle_capabilities():
-    return { 'media': ('transform', None) }
 
 def transform(media):
     suffix = ''
@@ -37,28 +34,10 @@ def transform(media):
 def handle_transform(params):
     return list(map(transform, params))
 
-for line in sys.stdin:
-    # strip off EOF
-    line = line.rstrip()
+def handle_capabilities(_):
+    return { 'media': ('transform', None) }
 
-    request = json.loads(line)
-    params = request['params']
-    id = request['id']
-
-    result = {}
-    error = None
-
-    match request['method']:
-        case 'capabilities/capabilities':
-            result = handle_capabilities()
-        case 'media/transform':
-            result = handle_transform(params)
-        case _:
-            result = None
-            error = "unknown method"
-
-    print(json.dumps({
-        'id': id,
-        'result': result,
-        'error': error
-    }))
+listen({
+    'capabilities/capabilities': handle_capabilities,
+    'media/transform': handle_transform
+})

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-import sys
-import json
 import re
+
+from common import listen
 
 def apply_op(lhs, rhs, op):
     default = True
@@ -42,7 +42,7 @@ def handle_filter(params):
         for media in params
     ]
 
-def handle_capabilities():
+def handle_capabilities(_):
     return {
         'media': ('filter', None),
         'query': {
@@ -50,28 +50,8 @@ def handle_capabilities():
         }
     }
 
-for line in sys.stdin:
-    line = line.rstrip()
-
-    request = json.loads(line)
-    params = request['params']
-    id = request['id']
-
-    result = {}
-    error = None
-
-    match request['method']:
-        case 'capabilities/capabilities':
-            result = handle_capabilities()
-        case 'query/set':
-            result = handle_query(params)
-        case 'media/filter':
-            result = handle_filter(params)
-        case _:
-            raise Exception("unknown method")
-
-    print(json.dumps({
-        'id': id,
-        'result': result,
-        'error': error
-    }))
+listen({
+    'capabilities/capabilities': handle_capabilities,
+    'query/set': handle_query,
+    'media/filter': handle_filter
+})

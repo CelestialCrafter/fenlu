@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 
 import os
-import sys
-import json
-import traceback
 import tomllib
 from urllib.parse import quote
 from PIL import Image, UnidentifiedImageError
+
+from common import listen
 
 with open('config-source-directory.toml', 'rb') as file:
     config = tomllib.load(file)
@@ -44,35 +43,10 @@ def handle_generate(params):
         'finished': len(files) <= batch_size * (state + 1)
     }
 
-def handle_capabilities():
+def handle_capabilities(_):
     return { 'media': ('source', None) }
 
-for line in sys.stdin:
-    # strip off EOF
-    line = line.rstrip()
-
-    request = json.loads(line)
-    params = request['params']
-    id = request['id']
-
-    result = {}
-    error = None
-
-    try:
-        match request['method']:
-            case 'capabilities/capabilities':
-                result = handle_capabilities()
-            case 'media/generate':
-                    result = handle_generate(params)
-            case _:
-                raise Exception("unknown method")
-    except Exception:
-                result = None
-                error = traceback.format_exc()
-
-    print(json.dumps({
-        'id': id,
-        'result': result,
-        'error': error
-    }))
-
+listen({
+    'capabilities/capabilities': handle_capabilities,
+    'media/generate': handle_generate
+})
