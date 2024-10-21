@@ -2,7 +2,6 @@
 
 import re
 import sys
-import time
 import traceback
 import requests
 import json
@@ -13,7 +12,6 @@ with open("config-source-pixiv.toml", "rb") as file:
 
 max = 100
 prev_posts = max
-
 
 def handle_generate(params):
     global max
@@ -47,7 +45,6 @@ def handle_generate(params):
     ]
 
     return {"media": media, "finished": len(data["body"]["works"]) < max}
-
 
 def transform(post):
     date = re.sub(
@@ -86,7 +83,6 @@ for line in sys.stdin:
             case "capabilities/capabilities":
                 result = handle_capabilities()
             case "media/generate":
-                time.sleep(config["request_delay"])
                 result = handle_generate(params)
             case _:
                 raise Exception("unknown method")
