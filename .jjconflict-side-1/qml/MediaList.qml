@@ -1,6 +1,6 @@
-import QtQuick 2.12
-import QtQuick.Controls 2.12
-import fenlu 1.0
+import QtQuick
+import QtQuick.Controls
+import fenlu
 
 Item {
     Connections {

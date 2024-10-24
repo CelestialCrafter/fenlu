@@ -1,7 +1,7 @@
-import QtQuick.Window 2.12
-import QtQuick.Layouts 2.12
-import QtQuick.Controls 2.12
-import fenlu 1.0
+import QtQuick.Window
+import QtQuick.Layouts
+import QtQuick.Controls
+import fenlu
 
 Window {
     height: 480

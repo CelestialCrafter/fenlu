@@ -1,7 +1,7 @@
-import QtQuick 2.12
-import QtQuick.Controls 2.12
-import QtQuick.Layouts 2.12
-import fenlu 1.0
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+import fenlu
 
 Item {
     Rectangle {
