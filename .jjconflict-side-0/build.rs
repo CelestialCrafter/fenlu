@@ -13,6 +13,7 @@ fn main() {
                 "qml/Queries.qml",
                 "qml/Media.qml",
                 "qml/MediaDetails.qml",
+                "qml/ActionsContextMenu.qml",
             ],
             ..Default::default()
         })
