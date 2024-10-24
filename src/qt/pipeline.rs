@@ -1,3 +1,8 @@
+// @FIX this entire file is super fucked and needs to be redone who thought of this stupid type
+// sharing system what is even going on i dont get it please someone save me
+// (option 1. figure out a better data sharing system)
+// (option 2. remove json.parse's and replace them with cxx_qt types)
+
 #[cxx_qt::bridge(cxx_file_stem = "pipeline")]
 pub mod qobject {
     unsafe extern "C++" {
@@ -7,8 +12,8 @@ pub mod qobject {
         include!("cxx-qt-lib/qurl.h");
         type QUrl = cxx_qt_lib::QUrl;
 
-        include!("cxx-qt-lib/qset.h");
-        type QSet_QString = cxx_qt_lib::QSet<QString>;
+        include!("cxx-qt-lib/qlist.h");
+        type QList_QString = cxx_qt_lib::QList<QString>;
     }
 
     unsafe extern "RustQt" {
@@ -22,11 +27,15 @@ pub mod qobject {
 
     unsafe extern "RustQt" {
         #[qinvokable]
-        fn items(self: &FenluPipeline, from: usize) -> QSet_QString;
+        fn items(self: &FenluPipeline, from: usize) -> QList_QString;
         #[qinvokable]
-        fn queryable_scripts(self: &FenluPipeline) -> QSet_QString;
+        fn queryable_scripts(self: &FenluPipeline) -> QList_QString;
         #[qinvokable]
         fn set_query(self: &FenluPipeline, script: QString, query: QString);
+        #[qinvokable]
+        fn actions_for_scripts(self: &FenluPipeline, history: QList_QString) -> QList_QString;
+        #[qinvokable]
+        fn run_action(self: Pin<&mut FenluPipeline>, media: QString, action: QString);
         #[qinvokable]
         fn run_pipeline(self: Pin<&mut FenluPipeline>);
     }
@@ -42,15 +51,12 @@ use std::{
 };
 
 use cxx_qt_lib::QString;
-use qobject::{FenluPipeline, FenluPipelineCxxQtThread, QSet_QString};
+use qobject::{FenluPipeline, FenluPipelineCxxQtThread, QList_QString};
 use tokio::{sync::mpsc, task::{self}};
 use tracing::{debug, info, instrument, Instrument};
 
 use crate::{
-    config::CONFIG,
-    pipeline::GLOBAL_PIPELINE,
-    protocol::{messages::Request, query},
-    utils,
+    config::CONFIG, pipeline::GLOBAL_PIPELINE, protocol::{actions, messages::Request, query}, utils::{self, generate_id}
 };
 
 #[derive(Default)]
@@ -80,42 +86,72 @@ fn set_running(thread: &FenluPipelineCxxQtThread, running: bool) {
     }
 
 impl qobject::FenluPipeline {
-    pub fn items(&self, at: usize) -> QSet_QString {
-        let mut set = QSet_QString::default();
+    pub fn items(&self, at: usize) -> QList_QString {
         let items = self.items.read().unwrap();
-
-        for item in &items[at..items.len()] {
-            set.insert(item.clone());
-        }
-
-        set
+        let (_, split) = items.split_at(at);
+        QList_QString::from(split)
     }
 
-    pub fn queryable_scripts(&self) -> QSet_QString {
-        let mut set = QSet_QString::default();
-        GLOBAL_PIPELINE
+    pub fn queryable_scripts(&self) -> QList_QString {
+        QList_QString::from(GLOBAL_PIPELINE
             .scripts
             .iter()
             .filter(|(_, script)| script.capabilities.query.set)
             .map(|(name, _)| QString::from(name))
-            .for_each(|name| set.insert(name));
-        set
+            .collect::<Vec<QString>>())
     }
 
     pub fn set_query(&self, script: QString, query: QString) {
         info!(script = ?script, query = ?query,"setting query");
-        task::spawn(GLOBAL_PIPELINE
-            .scripts
-            .get(&script.to_string())
-            .expect("script should exist")
-            .request(Request {
-                id: utils::generate_id(),
-                method: query::QUERY_SET_METHOD.to_string(),
-                params: serde_json::to_value(query::QueryRequest {
-                    query: query.to_string(),
-                })
-                .expect("could not set query"),
-            }));
+        task::spawn(async move {
+            GLOBAL_PIPELINE
+                .scripts
+                .get(&script.to_string())
+                .expect("script should exist")
+                .request(Request {
+                    id: utils::generate_id(),
+                    method: query::QUERY_SET_METHOD.to_string(),
+                    params: serde_json::to_value(query::QueryRequest {
+                        query: query.to_string(),
+                    })
+                    .expect("could not encode query as json"),
+                }).await.result().expect("could not set query");
+        });
+    }
+
+    pub fn actions_for_scripts(&self, history: QList_QString) -> QList_QString {
+        QList_QString::from(history
+            .iter()
+            .filter_map(|name| GLOBAL_PIPELINE.scripts.get_key_value(&name.to_string()))
+            .map(|(name, script)| 
+                script
+                .capabilities
+                .actions
+                .iter().map(move |action| (name, action))
+            )
+            .flatten()
+            .map(|(name, action)| QString::from(&format!("{}/{}", name, action)))
+            .collect::<Vec<QString>>())
+    }
+
+    pub fn run_action(self: Pin<&mut FenluPipeline>, media: QString, action: QString) {
+        let action = action.to_string();
+        let media = media.to_string();
+
+        let split = action.split_once('/');
+        let (script_name, action_name) = split.expect("action was not formatted as \"script/name\"");
+        let action_name = action_name.to_string();
+
+        let script = GLOBAL_PIPELINE.scripts.get(script_name).expect("no matching scripts for action");
+
+        task::spawn(async move {
+            script.request(Request {
+                id: generate_id(),
+                method: (actions::ACTION_BASE_METHOD.to_string() + &action_name).to_string(),
+                params: serde_json::from_str(media.as_str()).unwrap()
+            })
+            .await.result().expect("could not run action");
+        });
     }
 
     #[instrument(skip(self), name = "pipeline")]
@@ -181,7 +217,7 @@ impl qobject::FenluPipeline {
                         render(&qthread, items.len());
                     }
 
-                    info!(amount = ?amount, "processed batch");
+                    debug!(amount = ?amount, "processed batch");
                 }
 
                 let items = items.read().unwrap();

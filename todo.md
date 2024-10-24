@@ -2,7 +2,7 @@
 
 ## high priority
 
-- actions protocol + impls
+- actions impls
 
 ## medium priority
 
