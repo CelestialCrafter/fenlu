@@ -3,6 +3,28 @@ import QtQuick.Controls 2.12
 import QtQuick.Layouts 2.12
 
 Popup {
+    function renderText(obj) {
+        const output = [];
+        for (let [k, v] of Object.entries(obj)) {
+            k = k.toString();
+            // uppercase first letter
+            const sk = k.charAt(0).toUpperCase() + k.slice(1);
+            const renderValue = v => `*${v.toString().trim()}*`;
+
+            let sv = '';
+            if (typeof v == typeof []) {
+                if (v.length < 1) continue;
+                sv += '<br/>' + v.map(renderValue).join('<br/>');
+            } else {
+                sv = ' ' + renderValue(v);
+            }
+
+            output.push(`${sk}:${sv}`);
+        }
+
+        return output.join('<br/><br/>');
+    }
+
     // dont even ask
     // @TODO remove this when json.parse is removed from MediaList.qml
     property var current: JSON.parse('{"title": "", "uri": "", "type": "Image", "width": 0, "height": 0, "history": []}')
@@ -15,27 +37,26 @@ Popup {
     height: window.height * 0.5
     onAboutToShow: {
         // @TODO fix markdown injection
-        let text = [];
-        text.push(`Title: *${current.title}*`);
+        let text = {};
+        text.title = current.title;
 
         switch (current.type) {
             case 'Image':
-                text.push(`Width: *${current.width}*`);
-                text.push(`Height: *${current.height}*`);
+                text.width = current.width;
+                text.height = current.height;
                 break;
             case 'PDF':
-                text.push(`Author: *${current.author}*`);
-                const trimAt = 100
+                text.author = current.author;
+                const trimAt = 100;
                 const truncated = current.summary.length > trimAt ? `${current.summary.substring(0, trimAt)}...` : current.summary;
-                text.push(`Summary: *${truncated.trim()}*`);
+                text.summary = truncated;
                 break;
         }
 
-        text.push('History:<br />' + current.history.map(f => `*${f}*`).join('<br />'));
+        text.history = current.history;
+        text.tags = current.tags;
 
-        if (current.tags.length > 0) text.push('Tags:<br />' + current.tags.map(f => `*${f}*`).join('<br />'));
-
-        details.text = text.join('<br /><br />');
+        details.text = renderText(text);
         media.media = current;
     }
 
