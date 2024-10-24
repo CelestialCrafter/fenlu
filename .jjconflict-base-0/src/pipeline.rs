@@ -14,7 +14,7 @@ use eyre::{Report, Result};
 use tokio::{
     join, sync::mpsc, task::{self}, time
 };
-use tracing::{error, info, instrument, Instrument};
+use tracing::{info, instrument, Instrument};
 
 pub const DB_PATH: &str = "fenlu.db";
 

@@ -31,11 +31,6 @@ Image {
     }
 
     MouseArea {
-        ActionsContextMenu {
-            selected: media
-            id: ctx
-        }
-
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         onClicked: event => {
@@ -45,7 +40,8 @@ Image {
                     mediaDetails.open();
                     break;
                 case Qt.RightButton:
-                    ctx.popup();
+                    contextMenu.current = media;
+                    contextMenu.popup();
                     break;
             }
         }

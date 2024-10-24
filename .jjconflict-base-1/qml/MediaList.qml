@@ -27,6 +27,10 @@ Item {
         id: mediaDetails
     }
 
+    ActionsContextMenu {
+        id: contextMenu
+    }
+
     CustomScrollGridView {
         property var columns: 6
 
