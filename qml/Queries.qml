@@ -4,10 +4,6 @@ import QtQuick.Layouts
 import fenlu
 
 Item {
-    Rectangle {
-        anchors.fill: parent
-    }
-
     Column {
         id: column
         anchors.fill: parent
@@ -25,6 +21,7 @@ Item {
 
                 TextInput {
                     id: input
+                    activeFocusOnTab: true
                     anchors.left: label.right
                     width: parent.width * 0.6
 

@@ -3,7 +3,7 @@ import QtQuick.Layouts
 import QtQuick.Controls
 import fenlu
 
-Window {
+ApplicationWindow {
     height: 480
     title: qsTr("Fenlu")
     visible: true
@@ -16,7 +16,6 @@ Window {
 
     ColumnLayout {
         anchors.fill: parent
-
         Queries {
             id: queries
             z: 5
@@ -35,10 +34,13 @@ Window {
 
         MediaList {
             z: 1
+            focus: true
             Layout.fillHeight: true
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignBottom
             visible: mediaModel.count > 0
         }
     }
+
+    onActiveFocusItemChanged:  console.log("main: focus now on: ", activeFocusItem)
 }
