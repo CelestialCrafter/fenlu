@@ -10,9 +10,9 @@ with open('config-transform-proxy.toml', 'rb') as file:
 
 def transform(media):
     suffix = ''
-    if 'source-pixiv' in media['history']:
+    if 'source-pixiv.py' in media['history']:
         suffix = "pixiv"
-    elif 'source-kemono' in media['history']:
+    elif 'exclude-source-kemono.py' in media['history']:
         suffix = "kemono"
     else:
         return media
