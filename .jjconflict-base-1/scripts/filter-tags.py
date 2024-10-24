@@ -34,7 +34,9 @@ def handle_query(params):
 
 def handle_filter(params):
     global tags
-    return list(map(lambda media: len(tags) == 0 or has_tags(media['tags'], tags), params))
+    return {
+        'included': list(map(lambda media: len(tags) == 0 or has_tags(media['tags'], tags), params))
+    }
 
 def handle_capabilities(_):
     return {

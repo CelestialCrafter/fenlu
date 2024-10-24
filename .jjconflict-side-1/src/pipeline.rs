@@ -14,7 +14,7 @@ use eyre::{Report, Result};
 use tokio::{
     join, sync::mpsc, task::{self}, time
 };
-use tracing::{debug, instrument, Instrument};
+use tracing::{error, info, instrument, Instrument};
 
 pub const DB_PATH: &str = "fenlu.db";
 
@@ -24,9 +24,9 @@ pub static GLOBAL_PIPELINE: LazyLock<Pipeline> = LazyLock::new(|| {
     pipeline
 });
 
-pub fn append_history(path: PathBuf, media: &mut media::Media) {
-    let name = utils::path_to_name(&path);
-    media.history.push(name);
+pub fn append_history(path: &PathBuf, data: serde_json::Value, media: &mut media::Media) {
+    let name = utils::path_to_name(path);
+    media.history.insert(name, data);
 }
 
 #[derive(Default)]
@@ -74,7 +74,7 @@ impl Pipeline {
                 for source in source_scripts {
                     let mut state = 0;
                     loop {
-                        let response: media::GenerateResponse = serde_json::from_value(
+                        let mut response: media::GenerateResponse = serde_json::from_value(
                             source
                             .request(Request {
                                 id: utils::generate_id(),
@@ -88,8 +88,9 @@ impl Pipeline {
                             .result()?,
                         )?;
 
-                        for mut media in response.media {
-                            append_history(source.path.clone(), &mut media);
+                        response.extra.resize(response.media.len(), serde_json::Value::Null);
+                        for (mut media, extra) in response.media.into_iter().zip(response.extra) {
+                            append_history(&source.path, extra, &mut media);
                             tx_s.send(media).await?;
                         }
 
@@ -105,7 +106,7 @@ impl Pipeline {
                     }
                 }
 
-                debug!("sources finished");
+                info!("sources finished");
 
                 Ok::<_, Report>(())
             }
@@ -116,13 +117,15 @@ impl Pipeline {
         let transforms = task::spawn(
             async move {
                 loop {
-                    let mut buffer = Vec::with_capacity(buffer_size);
+                    let mut buffer: Vec<media::Media> = Vec::with_capacity(buffer_size);
                     if rx_s.recv_many(&mut buffer, buffer_size).await == 0 {
                         break;
                     }
 
                     for transform in transform_scripts.clone() {
-                        buffer = serde_json::from_value(
+                        let expected_len = buffer.len();
+
+                        let mut response: media::TransformResponse = serde_json::from_value(
                             transform
                             .request(Request {
                                 id: utils::generate_id(),
@@ -132,9 +135,13 @@ impl Pipeline {
                             .await
                             .result()?,
                         )?;
+                        assert!(response.media.len() == expected_len, "media amount was not equal to buffer length");
 
-                        for i in 0..buffer.len() {
-                            append_history(transform.path.clone(), &mut buffer[i]);
+                        buffer = response.media;
+
+                        response.extra.resize(buffer.len(), serde_json::Value::Null);
+                        for (i, extra) in response.extra.into_iter().enumerate() {
+                            append_history(&transform.path, extra, &mut buffer[i]);
                         }
 
                         if let Some(ms) = transform.capabilities.media.1 {
@@ -147,7 +154,7 @@ impl Pipeline {
                     }
                 }
 
-                debug!("transforms finished");
+                info!("transforms finished");
 
                 Ok::<_, Report>(())
             }
@@ -164,7 +171,7 @@ impl Pipeline {
                     }
 
                     for filter in filter_scripts.clone() {
-                        let response: media::FilterResponse = serde_json::from_value(
+                        let mut response: media::FilterResponse = serde_json::from_value(
                             filter
                             .request(Request {
                                 id: utils::generate_id(),
@@ -175,15 +182,18 @@ impl Pipeline {
                             .result()?,
                         )?;
 
+                        assert!(response.included.len() == buffer.len(), "included items was not equal to buffer length");
+
                         buffer = buffer
                             .into_iter()
                             .enumerate()
-                            .filter(|(i, _)| response[*i])
+                            .filter(|(i, _)| response.included[*i])
                             .map(|(_, media)| media)
                             .collect();
 
-                        for i in 0..buffer.len() {
-                            append_history(filter.path.clone(), &mut buffer[i]);
+                        response.extra.resize(buffer.len(), serde_json::Value::Null);
+                        for (i, extra) in response.extra.into_iter().enumerate() {
+                            append_history(&filter.path, extra, &mut buffer[i]);
                         }
 
                         if let Some(ms) = filter.capabilities.media.1 {
@@ -192,11 +202,11 @@ impl Pipeline {
                     }
 
                     for media in buffer {
-                        output.send(media).await?;
+                        output.send(media.clone()).await?;
                     }
                 }
 
-                debug!("filters finished");
+                info!("filters finished");
 
                 Ok::<_, Report>(())
             }
@@ -205,6 +215,7 @@ impl Pipeline {
 
         let joined = join!(sources, transforms, filters);
         for result in vec![joined.0, joined.1, joined.2] {
+            // @TODO just return all 3 errors incase multiple tasks fail
             result??;
         }
 

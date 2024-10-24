@@ -1,6 +1,16 @@
 import sys
 import json
 import traceback
+import subprocess
+
+def open_uri(uri):
+    if sys.platform == 'win32':
+        command = 'start'
+    elif sys.platform == 'darwin':
+        command = 'open'
+    else:
+        command = 'xdg-open'
+    subprocess.Popen([command, uri], stdout=sys.stderr, stderr=sys.stderr)
 
 def log(*args, **kwargs):
     print(*args, **kwargs, file=sys.stderr)

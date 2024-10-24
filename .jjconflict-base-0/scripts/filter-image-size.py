@@ -30,17 +30,19 @@ def handle_query(params):
 
 def handle_filter(params):
     global conditions
-    return [
-        all(
-            apply_op(
-                media['width'] if lhs == 'w' else media['height'],
-                int(rhs),
-                op
-            )
-            for lhs, op, rhs in conditions
-        ) if media['type'] == 'Image' else True
-        for media in params
-    ]
+    return {
+        'included': [
+            all(
+                apply_op(
+                    media['width'] if lhs == 'w' else media['height'],
+                    int(rhs),
+                    op
+                )
+                for lhs, op, rhs in conditions
+            ) if media['type'] == 'Image' else True
+            for media in params
+        ]
+    }
 
 def handle_capabilities(_):
     return {

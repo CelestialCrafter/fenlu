@@ -18,7 +18,6 @@
 
 - settings gui + hot reload (?)
 - rename scripts to servers
-- let scripts attatch their own data into their history entry
 - cross platform support
 - figure out distribution
 
