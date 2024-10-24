@@ -13,7 +13,7 @@ Menu {
     }
 
     Repeater {
-        model: FenluPipeline.actionsForScripts(selected.history)
+        model: FenluPipeline.actionsForScripts(Object.keys(selected.history))
         MenuItem {
             required property string modelData
             text: modelData
