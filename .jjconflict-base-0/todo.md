@@ -2,8 +2,6 @@
 
 ## high priority
 
-- actions impls
-
 ## medium priority
 
 - import/export pipeline output from/to sqlite db
