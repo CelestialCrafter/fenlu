@@ -40,5 +40,12 @@ Item {
         id: rerun
         text: "Re-Run Pipeline"
         onClicked: FenluPipeline.runPipeline()
+
+        Text {
+            anchors.top: rerun.bottom
+            width: parent.width
+            horizontalAlignment: Text.AlignHCenter
+            text: "Total: " + FenluPipeline.total
+        }
     }
 }

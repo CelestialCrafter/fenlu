@@ -25,7 +25,7 @@ Window {
             Layout.alignment: Qt.AlignTop
         }
 
-        Label {
+        Text {
             z: 1
             Layout.fillHeight: true
             Layout.alignment: Qt.AlignHCenter | Qt.AlignTop

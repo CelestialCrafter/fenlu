@@ -32,7 +32,7 @@ pub struct Config {
 }
 
 fn default_media_update_interval() -> u64 {
-    500
+    1000
 }
 
 fn default_pipeline_mode() -> PipelineMode {
@@ -44,7 +44,7 @@ fn default_pipeline_mode() -> PipelineMode {
 }
 
 fn default_buffer_size() -> usize {
-    750
+    1024
 }
 
 pub static CONFIG: LazyLock<Config> = LazyLock::new(|| {
