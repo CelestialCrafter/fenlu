@@ -2,15 +2,16 @@
 
 ## high priority
 
+- keyboard support
+- import/export pipeline output from/to sqlite db
+- theming + default themes (rose pine, cattppuccin, gruvbox, tokyo night, nord)
+- better styling
+
 ## medium priority
 
-- import/export pipeline output from/to sqlite db
 - bm25l and fuzzy filters
 - html 5 support
 - CelestialCrafter/crawler pb source
-- theming + default themes (rose pine, cattppuccin, gruvbox, tokyo night, nord)
-- better styling
-- finer grained control over scripts, if a script implements media/generate and media/transform, there's no way to specify which you want
 
 ## low priority
 
