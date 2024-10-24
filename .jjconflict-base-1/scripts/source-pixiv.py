@@ -1,16 +1,33 @@
 #!/usr/bin/env python
 
 import re
+import os
 import requests
 import tomllib
 
-from common import listen
+from common import listen, open_uri
 
 with open('config-source-pixiv.toml', 'rb') as file:
     config = tomllib.load(file)
 
 max = 100
 prev_posts = max
+
+def transform(post):
+    date = re.sub(
+        r'\+.+',
+        '',
+        post['updateDate'].replace('-', '/').replace('T', '/').replace(':', '/'),
+    )
+
+    return [({
+        'title': post['title'],
+        'uri': f'http://i.pximg.net/img-master/img/{date}/{post['id']}_p{page}_master1200.jpg',
+        'height': post['width'],
+        'width': post['height'],
+        'type': 'Image',
+        'tags': post['tags'],
+    }, post['id']) for page in range(post['pageCount'])]
 
 def handle_generate(params):
     global max
@@ -33,39 +50,27 @@ def handle_generate(params):
     if data['error']:
         raise Exception(data['message'])
 
-    media = [
-        item
+    media, extra = list(zip(*[
+        x
         for post in filter(
             lambda post: post['illustType'] == 0
             and post['updateDate'] != '1970-01-01T00:00:00+09:00',
             data['body']['works'],
             )
-        for item in transform(post)
-    ]
+        for x in transform(post)
+    ]))
 
-    return {'media': media, 'finished': len(data['body']['works']) < max}
+    return {'media': media, 'extra': extra, 'finished': len(data['body']['works']) < max}
 
-def transform(post):
-    date = re.sub(
-        r'\+.+',
-        '',
-        post['updateDate'].replace('-', '/').replace('T', '/').replace(':', '/'),
-    )
-
-    return [{
-        'title': post['title'],
-        'uri': f'http://i.pximg.net/img-master/img/{date}/{post['id']}_p{page}_master1200.jpg',
-        'height': post['width'],
-        'width': post['height'],
-        'type': 'Image',
-        'tags': post['tags'],
-    } for page in range(post['pageCount'])]
-
+def handle_open_original(params):
+    open_uri('https://pixiv.net/artworks/' + params['history'][os.path.basename(__file__)])
+    return {}
 
 def handle_capabilities(_):
-    return {'media': ('source', 2500)}
+    return {'media': ('source', config['request_delay'] * 1000), 'actions': ['open-original']}
 
 listen({
     'capabilities/capabilities': handle_capabilities,
     'media/generate': handle_generate,
+    'actions/open-original': handle_open_original
 })
