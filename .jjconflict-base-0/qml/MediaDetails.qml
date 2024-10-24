@@ -12,7 +12,7 @@ Popup {
             const renderValue = v => `*${v.toString().trim()}*`;
 
             let sv = '';
-            if (typeof v == typeof []) {
+            if (v?.map) {
                 if (v.length < 1) continue;
                 sv += '<br/>' + v.map(renderValue).join('<br/>');
             } else {
@@ -53,7 +53,7 @@ Popup {
                 break;
         }
 
-        text.history = current.history;
+        text.history = Object.keys(current.history);
         text.tags = current.tags;
 
         details.text = renderText(text);
