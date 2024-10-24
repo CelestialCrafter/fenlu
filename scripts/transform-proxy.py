@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
 import os
-import sys
 import tomllib
-import subprocess
 from urllib.parse import urlparse, urlunparse
 
 from common import listen, open_uri
