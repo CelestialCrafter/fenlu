@@ -4,8 +4,7 @@ import QtQuick.Layouts
 import fenlu
 
 Item {
-    Rectangle {
-        id: rect
+    Pane {
         anchors.fill: parent
     }
 
@@ -26,7 +25,7 @@ Item {
         model: queryableModel
         delegate: FocusScope {
             width: parent.width
-            height: 15
+            height: font.pixelSize
 
             Text {
                 id: label
