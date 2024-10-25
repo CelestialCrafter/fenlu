@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import fenlu
 
-Item {
+FocusScope {
     Connections {
         target: FenluPipeline
         property var previousTotal: 0
@@ -37,6 +37,8 @@ Item {
         anchors.fill: parent
         id: grid
 
+        activeFocusOnTab: true
+        focus: true
         cellWidth: grid.width / columns
         cellHeight: grid.cellWidth
         model: mediaModel
@@ -45,6 +47,17 @@ Item {
         delegate: Media {
             width: grid.cellWidth
             height: grid.cellHeight
+        }
+
+        highlightFollowsCurrentItem: false
+        highlight: Rectangle {
+            x: grid.currentItem.x
+            y: grid.currentItem.y
+            width: grid.cellWidth
+            height: grid.cellHeight
+            color: "#000000"
+            opacity: 0.6
+            z: 1
         }
     }
 }

@@ -2,7 +2,6 @@
 
 ## high priority
 
-- keyboard support
 - import/export pipeline output from/to sqlite db
 - theming + default themes (rose pine, cattppuccin, gruvbox, tokyo night, nord)
 - better styling

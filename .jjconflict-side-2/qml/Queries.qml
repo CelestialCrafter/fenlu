@@ -5,31 +5,41 @@ import fenlu
 
 Item {
     Rectangle {
+        id: rect
         anchors.fill: parent
     }
 
-    Column {
-        id: column
+    ListModel {
+        id: queryableModel
+        Component.onCompleted: {
+            for (const script of FenluPipeline.queryableScripts()) {
+                this.append({ script });
+            }
+        }
+    }
+
+    ListView {
+        activeFocusOnTab: true
+        interactive: false
+        keyNavigationEnabled: true
         anchors.fill: parent
+        model: queryableModel
+        delegate: FocusScope {
+            width: parent.width
+            height: 15
 
-        Repeater {
-            model: FenluPipeline.queryableScripts()
-            Item {
-                width: parent.width
-                height: 15
-                required property string modelData
-                Text {
-                    id: label
-                    text: modelData + ": "
-                }
+            Text {
+                id: label
+                text: script + ": "
+            }
 
-                TextInput {
-                    id: input
-                    anchors.left: label.right
-                    width: parent.width * 0.6
+            TextInput {
+                focus: true
+                clip: true
+                anchors.left: label.right
+                width: parent.width * 0.6
 
-                    onAccepted: FenluPipeline.setQuery(modelData, input.text)
-                }
+                onAccepted: FenluPipeline.setQuery(script, this.text)
             }
         }
     }
@@ -37,12 +47,11 @@ Item {
     Button {
         anchors.right: parent.right
         enabled: !FenluPipeline.running
-        id: rerun
         text: "Re-Run Pipeline"
         onClicked: FenluPipeline.runPipeline()
 
         Text {
-            anchors.top: rerun.bottom
+            anchors.top: parent.bottom
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
             text: "Total: " + FenluPipeline.total

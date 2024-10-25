@@ -5,11 +5,17 @@ import fenlu
 Image {
     required property var media
 
+    function openDetails() {
+        mediaDetails.current = media;
+        mediaDetails.open();
+    }
+
     asynchronous: true
     cache: false
     fillMode: Image.PreserveAspectCrop
     source: media.uri
     sourceSize: media.type === "Image" ? Qt.size(media.width, media.height) : null
+    Keys.onReturnPressed: openDetails()
 
     Label {
         horizontalAlignment: Text.AlignHCenter
@@ -36,8 +42,7 @@ Image {
         onClicked: event => {
             switch (event.button) {
                 case Qt.LeftButton:
-                    mediaDetails.current = media;
-                    mediaDetails.open();
+                    openDetails();
                     break;
                 case Qt.RightButton:
                     contextMenu.current = media;
