@@ -1,8 +1,12 @@
 import QtQuick
 import QtQuick.Controls
 import fenlu
+import fenlu
 
-FocusScope {
+Pane {
+    focus: true
+    horizontalPadding: 48
+
     Connections {
         target: FenluPipeline
         property var previousTotal: 0
@@ -32,32 +36,26 @@ FocusScope {
     }
 
     CustomScrollGridView {
-        property var columns: 6
+        property int size: 296
+        property int spacing: 4
 
         anchors.fill: parent
         id: grid
-
         activeFocusOnTab: true
         focus: true
-        cellWidth: grid.width / columns
-        cellHeight: grid.cellWidth
+        clip: true
+        cacheBuffer: size
+        cellWidth: size
+        cellHeight: size
         model: mediaModel
-        cacheBuffer: grid.cellHeight * columns
 
         delegate: Media {
-            width: grid.cellWidth
-            height: grid.cellHeight
+            width: grid.size - grid.spacing
+            height: grid.size - grid.spacing
+            backgroundFocused: GridView.isCurrentItem
+            minorBackground: !GridView.isCurrentItem
         }
 
-        highlightFollowsCurrentItem: false
-        highlight: Rectangle {
-            x: grid.currentItem.x
-            y: grid.currentItem.y
-            width: grid.cellWidth
-            height: grid.cellHeight
-            color: "#000000"
-            opacity: 0.6
-            z: 1
-        }
+        highlight: Item {}
     }
 }

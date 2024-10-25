@@ -1,55 +1,85 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
+import QtQuick.Effects
 import fenlu
 
-Image {
+Pane {
     required property var media
+    property bool focusEnabled: true
+    property bool minorBackground: false
+    property bool backgroundFocused: false
+
+    padding: 10
+    background: MediaBackground {
+        focused: mouseArea.containsMouse || backgroundFocused
+        minor: minorBackground
+    }
 
     function openDetails() {
         mediaDetails.current = media;
         mediaDetails.open();
     }
 
-    asynchronous: true
-    cache: false
-    fillMode: Image.PreserveAspectCrop
-    source: media.uri
-    sourceSize: media.type === "Image" ? Qt.size(media.width, media.height) : null
     Keys.onReturnPressed: openDetails()
 
-    Label {
-        horizontalAlignment: Text.AlignHCenter
-        anchors.top: parent.top
-        width: parent.width
-        topPadding: 5
-        bottomPadding: 5
-        fontSizeMode: Text.Fit
-        elide: Text.ElideRight
-        wrapMode: Text.Wrap
+    ColumnLayout {
+        anchors.fill: parent
+        spacing: 12
 
-        text: media.title
-        color: "white"
+        Image {
+            id: picture
+            Layout.fillWidth: true
+            Layout.preferredHeight: parent.height * 0.9
 
-        background: Rectangle {
-            opacity: 0.7
-            color: "black"
+            asynchronous: true
+            cache: false
+            mipmap: true
+            source: media.uri
+            fillMode: Image.PreserveAspectFit
+            sourceSize: media.type === "Image" ? Qt.size(media.width, media.height) : null
+
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                source: picture
+                shadowEnabled: true
+                shadowColor: "gray"
+                shadowBlur: 0
+                shadowVerticalOffset: 3
+                shadowHorizontalOffset: 3
+            }
+        }
+
+        Text {
+            Layout.fillHeight: true
+            Layout.fillWidth: true
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+
+            maximumLineCount: 1
+            elide: Text.ElideRight
+            text: media.title
         }
     }
 
+
     MouseArea {
         anchors.fill: parent
+        id: mouseArea
+        hoverEnabled: focusEnabled
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         onClicked: event => {
             switch (event.button) {
                 case Qt.LeftButton:
-                    openDetails();
-                    break;
+                openDetails();
+                break;
                 case Qt.RightButton:
-                    contextMenu.current = media;
-                    contextMenu.popup();
-                    break;
+                contextMenu.current = media;
+                contextMenu.popup();
+                break;
             }
         }
     }
 }
+
 

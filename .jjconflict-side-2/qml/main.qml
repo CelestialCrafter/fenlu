@@ -8,7 +8,6 @@ ApplicationWindow {
     title: qsTr("Fenlu")
     visible: true
     width: 640
-    id: window
 
     ListModel {
         id: mediaModel
@@ -16,16 +15,13 @@ ApplicationWindow {
 
     ColumnLayout {
         anchors.fill: parent
-        Queries {
+        Topbar {
             id: queries
-            z: 5
-            Layout.preferredHeight: parent.height * 0.1
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignTop
         }
 
         Text {
-            z: 1
             Layout.fillHeight: true
             Layout.alignment: Qt.AlignHCenter | Qt.AlignTop
             text: "no media loaded"
@@ -33,7 +29,6 @@ ApplicationWindow {
         }
 
         MediaList {
-            z: 1
             focus: true
             Layout.fillHeight: true
             Layout.fillWidth: true

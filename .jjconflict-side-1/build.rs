@@ -9,11 +9,12 @@ fn main() {
             qml_files: &[
                 "qml/main.qml",
                 "qml/CustomScrollGridView.qml",
-                "qml/MediaList.qml",
-                "qml/Queries.qml",
-                "qml/Media.qml",
-                "qml/MediaDetails.qml",
                 "qml/ActionsContextMenu.qml",
+                "qml/Topbar.qml",
+                "qml/MediaList.qml",
+                "qml/MediaDetails.qml",
+                "qml/MediaBackground.qml",
+                "qml/Media.qml",
             ],
             ..Default::default()
         })

@@ -1,8 +1,12 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import fenlu
 
 Popup {
+    padding: 0
+    rightPadding: 10
+
     function renderText(obj) {
         const output = [];
         for (let [k, v] of Object.entries(obj)) {
@@ -33,8 +37,8 @@ Popup {
     modal: true
     focus: true
     anchors.centerIn: Overlay.overlay
-    width: window.width * 0.7
-    height: window.height * 0.5
+    width: ApplicationWindow.window.width * 0.7
+    height: ApplicationWindow.window.height * 0.5
     onAboutToShow: {
         // @TODO fix markdown injection
         let text = {};
@@ -64,11 +68,13 @@ Popup {
         anchors.fill: parent
 
         Media {
-            media: current
             id: media
+            Layout.alignment: Qt.AlignTop
             Layout.preferredWidth: Math.max(parent.width * imageMaxWidth,  parent.height)
-            Layout.maximumHeight: parent.height
-            fillMode: Image.PreserveAspectFit
+            Layout.fillHeight: true
+
+            media: current
+            focusEnabled: false
         }
 
         Text {
