@@ -41,6 +41,4 @@ ApplicationWindow {
             visible: mediaModel.count > 0
         }
     }
-
-    onActiveFocusItemChanged:  console.log("main: focus now on: ", activeFocusItem)
 }
