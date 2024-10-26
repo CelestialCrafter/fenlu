@@ -1,27 +1,19 @@
 # fenlu
 
-Simple and Extensible all-purpose media viewer
+simple and extensible all-purpose media organizer inspired by qimgv
 
 ## dependencies
 
-### build dependencies - fenlu-qt
+### build dependencies - fenlu
+
 - qt6
 - pkg-config
 - g++
 - [rust](https://www.rust-lang.org/)
 
-### runtime dependencies - fenlu-qt
+### runtime dependencies - fenlu
+
 - qt6
-
-### build dependencies - fenlu-cli
-- [lua](https://www.lua.org/)
-- [rust](https://www.rust-lang.org/)
-- g++
-
-### runtime dependencies - fenlu-cli
-- [lua](https://www.lua.org/)
-- [luarocks](https://luarocks.org)
-- [fennel](https://fennel-lang.org/)
 
 ## faq
 
@@ -34,5 +26,8 @@ Simple and Extensible all-purpose media viewer
 
 <details>
   <summary>Q: how do i script this?</summary>
-  A: fenlu-qt can be provided any script via the config. scripting for fenlu-cli is done in [fennel](https://fennel-lang.org/)
+  A: any binary, shell script, .py, or .js file
+  can be placed in the `scripts/` folder
+  and be added to config.whitelisted_scripts
+  the protocol for scripts is defined in `src/protocol`
 </details>
