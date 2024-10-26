@@ -30,6 +30,12 @@ pub struct Colors {
 }
 
 #[derive(Deserialize)]
+pub struct Interface {
+    #[serde(default = "default_thumbnail_size")]
+    pub thumbnail_size: u16
+}
+
+#[derive(Deserialize)]
 pub struct Config {
     #[serde(default)]
     pub whitelisted_scripts: Vec<String>,
@@ -39,7 +45,8 @@ pub struct Config {
     pub media_update_interval: u64,
     #[serde(default = "default_buffer_size")]
     pub buffer_size: usize,
-    pub colors: Colors
+    pub colors: Colors,
+    pub interface: Interface
 }
 
 fn default_media_update_interval() -> u64 {
@@ -56,6 +63,11 @@ fn default_pipeline_mode() -> PipelineMode {
 
 fn default_buffer_size() -> usize {
     1024
+}
+
+
+fn default_thumbnail_size() -> u16 {
+    296
 }
 
 pub static CONFIG: LazyLock<Config> = LazyLock::new(|| {
