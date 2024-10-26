@@ -43,7 +43,7 @@ Pane {
             layer.effect: MultiEffect {
                 source: picture
                 shadowEnabled: true
-                shadowColor: "gray"
+                shadowColor: palette.shadow
                 shadowBlur: 0
                 shadowVerticalOffset: 3
                 shadowHorizontalOffset: 3

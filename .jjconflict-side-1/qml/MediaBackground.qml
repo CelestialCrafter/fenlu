@@ -4,12 +4,12 @@ Rectangle {
     property bool focused: true
     property bool minor: false
 
-    border.color: "#d7827e"
+    border.color: palette.highlight
     border.width: !minor * focused * 2
 
     Rectangle {
         anchors.fill: parent
-        color: minor ? "gray" : "#d7827e"
+        color: minor ? palette.dark : palette.highlight
         opacity: focused * 0.5 - (minor * 0.1)
     }
 }

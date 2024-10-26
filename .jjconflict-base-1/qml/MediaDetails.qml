@@ -6,6 +6,9 @@ import fenlu
 Popup {
     padding: 0
     rightPadding: 10
+    background: Rectangle {
+        color: palette.alternateBase
+    }
 
     function renderText(obj) {
         const output = [];
