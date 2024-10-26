@@ -5,7 +5,7 @@ fn main() {
         .qt_module("Network")
         .qml_module(QmlModule {
             uri: "fenlu",
-            rust_files: &["src/qt/pipeline.rs", "src/qt/colors.rs"],
+            rust_files: &["src/qt/pipeline.rs", "src/qt/colors.rs", "src/qt/interface.rs"],
             qml_files: &[
                 "qml/main.qml",
                 "qml/CustomScrollGridView.qml",

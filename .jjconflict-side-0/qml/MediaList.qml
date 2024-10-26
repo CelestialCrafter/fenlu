@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls
 import fenlu
-import fenlu
 
 Pane {
     focus: true
@@ -36,7 +35,7 @@ Pane {
     }
 
     CustomScrollGridView {
-        property int size: 296
+        property int size: FenluInterface.thumbnailSize
         property int spacing: 4
 
         anchors.fill: parent
