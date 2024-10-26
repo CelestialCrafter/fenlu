@@ -22,7 +22,7 @@ Item {
         height: controls.height + implicitHeight
 
         background: Rectangle {
-            color: "lightgray"
+            color: palette.alternateBase
         }
 
         ListView {
@@ -87,6 +87,6 @@ Item {
         anchors.bottom: parent.bottom
         width: parent.width
         height: 1
-        color: "grey"
+        color: palette.dark
     }
 }
