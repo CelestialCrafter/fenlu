@@ -20,6 +20,16 @@ impl Default for PipelineMode {
 }
 
 #[derive(Deserialize)]
+pub struct Colors {
+    pub base: [u8; 3],
+    pub surface: [u8; 3],
+    pub highlight_medium: [u8; 3],
+    pub highlight_high: [u8; 3],
+    pub text: [u8; 3],
+    pub accent: [u8; 3],
+}
+
+#[derive(Deserialize)]
 pub struct Config {
     #[serde(default)]
     pub whitelisted_scripts: Vec<String>,
@@ -29,6 +39,7 @@ pub struct Config {
     pub media_update_interval: u64,
     #[serde(default = "default_buffer_size")]
     pub buffer_size: usize,
+    pub colors: Colors
 }
 
 fn default_media_update_interval() -> u64 {

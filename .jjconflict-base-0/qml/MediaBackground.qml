@@ -9,7 +9,7 @@ Rectangle {
 
     Rectangle {
         anchors.fill: parent
-        color: minor ? palette.dark : palette.highlight
+        color: minor ? palette.mid : palette.highlight
         opacity: focused * 0.5 - (minor * 0.1)
     }
 }

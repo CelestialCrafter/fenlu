@@ -1,3 +1,4 @@
+import QtQuick
 import QtQuick.Window
 import QtQuick.Layouts
 import QtQuick.Controls
@@ -12,6 +13,16 @@ ApplicationWindow {
     ListModel {
         id: mediaModel
     }
+
+    palette.alternateBase: FenluColors.surface
+    palette.base: FenluColors.base
+    palette.window: FenluColors.base
+    palette.mid: FenluColors.highlightMedium
+    palette.shadow: FenluColors.highlightMedium
+    palette.dark: FenluColors.highlightHigh
+    palette.highlight: FenluColors.accent
+    palette.text: FenluColors.text
+
 
     ColumnLayout {
         anchors.fill: parent
