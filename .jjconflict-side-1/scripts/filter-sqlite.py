@@ -13,8 +13,8 @@ cursor = connection.cursor()
 cursor.execute('CREATE TABLE IF NOT EXISTS media (uri TEXT PRIMARY KEY, data TEXT NOT NULL)')
 
 def handle_filter(params):
-    cursor.executemany('INSERT INTO media VALUES(?)', [
-        [json.dumps(media)] for media in params
+    cursor.executemany('INSERT INTO media VALUES(?, ?)', [
+        [media['uri'], json.dumps(media)] for media in params
     ])
     connection.commit()
 

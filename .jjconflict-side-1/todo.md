@@ -2,6 +2,9 @@
 
 ## high priority
 
+- pipeline ordering
+- put queries in config
+- put script configs in config and provide via protocols
 - theming + default themes (rose pine, cattppuccin, gruvbox, tokyo night, nord)
 - better styling
 

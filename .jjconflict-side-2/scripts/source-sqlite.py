@@ -15,7 +15,7 @@ cursor.execute('CREATE TABLE IF NOT EXISTS media (uri TEXT PRIMARY KEY, data TEX
 def handle_generate(params):
     batch_size = params['batch_size']
     state = params['state']
-    rows = cursor.execute('SELECT * FROM media LIMIT ?, ?', (state * batch_size, batch_size)).fetchall()
+    rows = cursor.execute('SELECT data FROM media LIMIT ?, ?', (state * batch_size, batch_size)).fetchall()
     media = [json.loads(text[0]) for text in rows]
 
     return {
