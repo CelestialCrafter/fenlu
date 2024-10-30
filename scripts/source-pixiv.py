@@ -5,7 +5,7 @@ import os
 import requests
 import tomllib
 
-from common import listen, open_uri
+from common import listen, log, open_uri
 
 with open('config-source-pixiv.toml', 'rb') as file:
     config = tomllib.load(file)
@@ -67,7 +67,7 @@ def handle_open_original(params):
     return {}
 
 def handle_capabilities(_):
-    return {'media': ('source', config['request_delay'] * 1000), 'actions': ['open-original']}
+    return {'media': ('source', int(config['request_delay'] * 1000)), 'actions': ['open-original']}
 
 listen({
     'capabilities/capabilities': handle_capabilities,

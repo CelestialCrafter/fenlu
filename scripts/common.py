@@ -28,7 +28,7 @@ def listen(handlers):
             if method not in handlers:
                 error = 'unknown method'
             else:
-                result = handlers[method](request['params'])
+                result = handlers[method](request['params']) or {}
         except Exception:
                 result = None
                 error = traceback.format_exc()
