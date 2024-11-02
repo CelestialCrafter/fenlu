@@ -1,4 +1,7 @@
-import os, json
+import PIL
+import os, json, magic # <- https://stackoverflow.com/a/24433682
+from PIL import Image
+from urllib.parse import quote
 
 
 with open("sources/configs/directory.json", "r") as config_file:
@@ -36,13 +39,41 @@ def load_source_folder_documents(source_folder: str) -> list[str]:
 
 def load_documents() -> list[str]:
     global config
-    final_documents = []
+    documents_paths = []
 
     for source_folder in config["source_folders"]:
         source_documents = load_source_folder_documents(source_folder)
 
         if source_documents:
             for source_doc in source_documents:
-                final_documents.append(source_doc)
+                documents_paths.append(source_doc)
 
-    return final_documents
+    return documents_paths
+
+def process_documents(documents_paths: list[str]) -> list[dict]:
+    documents_data = []
+
+    for document_path in documents_paths:
+        document_metadata = {}
+
+        document_metadata["url"] = f"file:///{quote(document_path.lstrip('/'), safe=':/')}"
+        document_metadata["title"] = os.path.basename(document_path)
+        document_metadata["creation"] = int(os.path.getmtime(document_path) * 1000)
+
+        document_mimetype = magic.from_file(document_path, mime=True)
+
+        # @TODO if these types get more than 3.. make seperate functions to keep everything clean
+        if document_mimetype.startswith("image"):
+            try:
+                image_document = Image.open(document_path)
+            except PIL.UnidentifiedImageError:
+                continue
+
+            document_metadata["type"] = "image"
+            document_metadata["width"] = image_document.width
+            document_metadata["height"] = image_document.height
+
+
+        documents_data.append(document_metadata)
+
+    return documents_data
