@@ -8,7 +8,7 @@ files = []
 config = {}
 batch_size = 0
 
-def handle_generate(params):
+def handle_source(params):
     global files
 
     state = params['state']
@@ -21,11 +21,16 @@ def handle_generate(params):
             continue
 
         media.append({
-            'title': os.path.basename(path),
-            'uri': 'file:///' + quote(path.lstrip('/'), safe=':/'),
-            'width': image.width,
-            'height': image.height,
-            'type': 'Image'
+            'url': 'file:///' + quote(path.lstrip('/'), safe=':/'),
+            'type': 'Image',
+            'essentialMetadata': {
+                'title': os.path.basename(path),
+                'creation': int(os.path.getmtime(path) * 1000)
+            },
+            'typeMetadata': {
+                'width': image.width,
+                'height': image.height,
+            }
         })
 
     return {
@@ -38,16 +43,18 @@ def handle_initialize(params):
     global config
     global files
 
-    config = params['config']
-    batch_size = params['batch_size']
+    config = params['config'] or {
+            'path': '~/Pictures/.art/images/pixiv/'
+    }
+    batch_size = params['batchSize']
     files = files = [os.path.join(root, file) for root, _, files in os.walk(os.path.expanduser(config['path'])) for file in files]
 
     return {
-        'version': "ed19eeb5298ecc9881cbb729fa427abb3ab36c40",
+        'version': "0c933bf11c5d3ca6dd63a64d51f3d6e922077341",
         'capabilities':  ["media/source"]
     }
 
 listen({
     'initialize/initialize': handle_initialize,
-    'media/generate': handle_generate
+    'media/source': handle_source
 })

@@ -8,10 +8,11 @@ import (
 	"time"
 
 	"github.com/CelestialCrafter/fenlu/node"
+	"github.com/CelestialCrafter/fenlu/protocol"
 )
 
 func main() {
-	cmd := exec.Command("python", "test-server.py")
+	cmd := exec.Command("python", "nodes/source-directory.py")
 	cmd.Env = append(cmd.Env, "PYTHONUNBUFFERED=1")
 	cmd.Stderr = os.Stderr
 
@@ -31,7 +32,7 @@ func main() {
 		panic(err)
 	}
 
-	myNode, err := node.InitializeNode(in, out)
+	node, err := node.InitializeNode(in, out)
 	if err != nil {
 		panic(err)
 	}
@@ -41,7 +42,23 @@ func main() {
 		cmd.Process.Kill()
 	}()
 
-	fmt.Println(myNode.Capabilities())
+	fmt.Println(node.Capabilities())
+
+	result := new(protocol.SourceResult)
+	err = node.Request(
+		protocol.NewRequest(
+			protocol.SourceMethod,
+			protocol.SourceParams{
+				State: 0,
+			},
+		), 
+		result,
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("%+v", result)
 
 	err = cmd.Wait()
 	if err != nil {

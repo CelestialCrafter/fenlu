@@ -1,11 +1,9 @@
 package media
 
-import "net/url"
-
 type Media struct {
-	Url *url.URL `json:"url"`
+	Url string `json:"url"`
 	Type Type `json:"type"`
-	EssentialMetadata
-	TypeMetadata
-	NodeMetadata
+	EssentialMetadata `json:"essentialMetadata"`
+	TypeMetadata `json:"typeMetadata"`
+	NodeMetadata `json:"nodeMetadata"`
 }
