@@ -43,9 +43,7 @@ def handle_initialize(params):
     global config
     global files
 
-    config = params['config'] or {
-            'path': '~/Pictures/.art/images/pixiv/'
-    }
+    config = params['config']
     batch_size = params['batchSize']
     files = files = [os.path.join(root, file) for root, _, files in os.walk(os.path.expanduser(config['path'])) for file in files]
 
