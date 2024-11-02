@@ -1,6 +1,5 @@
-import PIL
-import os, json, magic # <- https://stackoverflow.com/a/24433682
-from PIL import Image
+import os, json, sys, magic # <- https://stackoverflow.com/a/24433682
+from PIL import Image, UnidentifiedImageError
 from urllib.parse import quote
 
 
@@ -66,7 +65,7 @@ def process_documents(documents_paths: list[str]) -> list[dict]:
         if document_mimetype.startswith("image"):
             try:
                 image_document = Image.open(document_path)
-            except PIL.UnidentifiedImageError:
+            except UnidentifiedImageError:
                 continue
 
             document_metadata["type"] = "image"
@@ -77,3 +76,29 @@ def process_documents(documents_paths: list[str]) -> list[dict]:
         documents_data.append(document_metadata)
 
     return documents_data
+
+for line in sys.stdin:
+        # strip off EOF
+        request = json.loads(line.rstrip())
+
+        result = {}
+        error = None
+
+        method = request['method']
+        if method == "initialize/initialize":
+            print(json.dumps({
+                'id': request['id'],
+                'result': result,
+                'error': error,
+                'version': "ed19eeb5298ecc9881cbb729fa427abb3ab36c40",
+                'capabilities':  ["media/source"]
+            }))
+
+        else :
+            result = process_documents(load_documents())
+
+            print(json.dumps({
+                'id': request['id'],
+                'result': result,
+                'error': error,
+            }))
