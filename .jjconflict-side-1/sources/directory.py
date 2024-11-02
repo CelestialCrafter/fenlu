@@ -14,11 +14,22 @@ def is_file_allowed(file_name: str) -> bool:
 
 
 def load_source_folder_documents(source_folder: str) -> list[str]:
+    global config
     documents = []
-    for root, _, files in os.walk(source_folder):
-        for file in files:
-            if is_file_allowed(file):
-                documents.append(os.path.join(root, file))
+
+    if config["iterrate_through_folders"]:
+        for root, _, files in os.walk(source_folder):
+            for file in files:
+                if is_file_allowed(file):
+                    documents.append(os.path.join(root, file))
+
+    else:
+        dir_items = os.listdir(source_folder)
+        for dir_item in dir_items:
+            if os.path.isfile(os.path.join(source_folder, dir_item)):
+                if is_file_allowed(dir_item):
+                    documents.append(f"{source_folder}/{dir_item}")
+
 
     return documents
 
