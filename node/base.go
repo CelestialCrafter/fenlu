@@ -35,7 +35,7 @@ func responseReader(n *BaseNode, input io.Reader) {
 		}
 
 
-		if response.Result == nil && response.Error == nil {
+		if response.Result == nil && response.Error == "" {
 			panic(fmt.Sprintln("request did not have response or error: ", response.ID))
 		}
 
@@ -90,7 +90,11 @@ func (n *BaseNode) Request(request protocol.Request, value any) error {
 		return err
 	}
 
-	return response.Error
+	if response.Error != "" {
+		return errors.New(response.Error)
+	}
+
+	return nil
 }
 
 func (n *BaseNode) Capabilities() []string {
