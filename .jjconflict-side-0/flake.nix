@@ -10,6 +10,12 @@
       devShells.x86_64-linux.default = pkgs.mkShell {
         packages = with pkgs; [
           go
+
+          (python3.withPackages (python-pkgs: [
+            python-pkgs.python
+            python-pkgs.pillow
+            python-pkgs.requests
+          ]))
         ];
       };
     };
