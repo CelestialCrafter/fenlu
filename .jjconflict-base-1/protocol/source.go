@@ -2,5 +2,10 @@ package protocol
 
 import "github.com/CelestialCrafter/fenlu/media"
 
-type SourceParams struct {}
-type SourceResult = []media.Media
+type SourceParams struct {
+	State int
+}
+type SourceResult struct {
+	Media []media.Media
+	Finished bool
+}
