@@ -1,11 +1,11 @@
-import os, json, sys, magic # <- https://stackoverflow.com/a/24433682
+import os
+import json
+import sys
 from PIL import Image, UnidentifiedImageError
 from urllib.parse import quote
 
-
 with open("sources/configs/directory.json", "r") as config_file:
     config = json.load(config_file)
-
 
 def is_file_allowed(file_name: str) -> bool:
     for file_type in config["allowed_file_types"]:
@@ -13,7 +13,6 @@ def is_file_allowed(file_name: str) -> bool:
             return True
 
     return False
-
 
 def load_source_folder_documents(source_folder: str) -> list[str]:
     global config
@@ -34,7 +33,6 @@ def load_source_folder_documents(source_folder: str) -> list[str]:
 
 
     return documents
-
 
 def load_documents() -> list[str]:
     global config
@@ -85,20 +83,17 @@ for line in sys.stdin:
         error = None
 
         method = request['method']
-        if method == "initialize/initialize":
-            print(json.dumps({
-                'id': request['id'],
-                'result': result,
-                'error': error,
-                'version': "ed19eeb5298ecc9881cbb729fa427abb3ab36c40",
-                'capabilities':  ["media/source"]
-            }))
+        match method:
+            case 'initialize/initialize':
+                result = {
+                    'version': "ed19eeb5298ecc9881cbb729fa427abb3ab36c40",
+                    'capabilities':  ["media/source"]
+                }
+            case 'media/source':
+                result = process_documents(load_documents())
 
-        else :
-            result = process_documents(load_documents())
-
-            print(json.dumps({
-                'id': request['id'],
-                'result': result,
-                'error': error,
-            }))
+        print(json.dumps({
+            'id': request['id'],
+            'result': result,
+            'error': error,
+        }))
