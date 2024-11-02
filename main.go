@@ -37,7 +37,7 @@ func main() {
 		panic(err)
 	}
 
-	go func()  {
+	go func() {
 		time.Sleep(time.Second * 2)
 		cmd.Process.Kill()
 	}()
