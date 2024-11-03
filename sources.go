@@ -29,20 +29,18 @@ func runSource(channel chan<- []media.Media, source node.Source) error {
 	return nil
 }
 
-func runSources() (<-chan []media.Media, <-chan error, error) {
+func runSources(wg *sync.WaitGroup, cmds []*exec.Cmd) (<-chan []media.Media, <-chan error, error) {
 	sources := config.Config.Pipeline.Sources
 	bufferSize := config.Config.BatchSize * len(sources) * 10
 
 	mediaChannel := make(chan []media.Media, bufferSize)
 	errorChannel := make(chan error)
 
-	wg := sync.WaitGroup{}
-	cmds := make([]*exec.Cmd, len(sources))
+	for _, name := range sources {
+		cmd := createCmd(name)
+		cmds = append(cmds, cmd)
 
-	for i, name := range sources {
-		cmds[i] = createCmd(name)
-
-		n, err := node.InitializeNode(cmds[i], name)
+		n, err := node.InitializeNode(cmd, name)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -54,22 +52,11 @@ func runSources() (<-chan []media.Media, <-chan error, error) {
 
 			err := runSource(mediaChannel, source)
 			if err != nil {
+				log.Error(err)
 				errorChannel <- err
 			}
 		}()
 	}
-
-	go func()  {
-		wg.Wait()
-		log.Info("sources finished")
-
-		close(mediaChannel)
-		close(errorChannel)
-
-		for _, cmd := range cmds {
-			handleCmd(cmd)
-		}
-	}()
 
 	return mediaChannel, errorChannel, nil
 }

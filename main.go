@@ -3,6 +3,7 @@ package main
 import (
 	"os/exec"
 	"strings"
+	"sync"
 
 	"github.com/CelestialCrafter/fenlu/config"
 	"github.com/CelestialCrafter/fenlu/node"
@@ -27,9 +28,13 @@ type pipeline struct {
 	Sinks []node.Sink
 }
 
-func handleNodeErrors(errorChannel <-chan error) {
-	for err := range errorChannel {
-		log.Error("node errored", "error", err)
+func handleNodeErrors(errorChannels ...<-chan error) {
+	for _, channel := range errorChannels {
+		go func() {
+			for err := range channel {
+				log.Error("node errored", "error", err)
+			}
+		}()
 	}
 }
 
@@ -40,18 +45,24 @@ func main() {
 	}
 	config.SetupLogger()
 
-	// sources
-	sourceMedia, errorChannel, err := runSources()
+	wg := sync.WaitGroup{}
+	totalNodes := len(config.Config.Pipeline.Sources) + len(config.Config.Pipeline.Sinks) + len(config.Config.Pipeline.TransformsFilters)
+	cmds := make([]*exec.Cmd, 0, totalNodes)
+
+	sourceMedia, sourceErrors, err := runSources(&wg, cmds)
 	if err != nil {
 		log.Fatal("could not initialize sources", "error", err)
 	}
 
-	go handleNodeErrors(errorChannel)
-
-	// sinks
-	errorChannel, err = runSinks(sourceMedia)
+	sinkErrors, err := runSinks(&wg, cmds, sourceMedia)
 	if err != nil {
 		log.Fatal("could not initialize sinks", "error", err)
 	}
-	go handleNodeErrors(errorChannel)
+
+	go handleNodeErrors(sourceErrors, sinkErrors)
+
+	wg.Wait()
+	for _, cmd := range cmds {
+		handleCmd(cmd)
+	}
 }
