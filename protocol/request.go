@@ -7,12 +7,12 @@ import (
 type Request struct {
 	ID int `json:"id"`
 	Method string `json:"method"`
-	Params interface{} `json:"params"`
+	Params any `json:"params"`
 }
 
 var id = atomic.Int32{}
 
-func NewRequest(method string, params interface{}) Request {
+func NewRequest(method string, params any) Request {
 	return Request {
 		ID: int(id.Add(1)),
 		Method: method,

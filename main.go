@@ -7,11 +7,13 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/CelestialCrafter/fenlu/config"
 	"github.com/CelestialCrafter/fenlu/node"
 	"github.com/CelestialCrafter/fenlu/protocol"
 )
 
 func main() {
+	config.LoadConfig()
 	cmd := exec.Command("python", "nodes/source-directory.py")
 	cmd.Env = append(cmd.Env, "PYTHONUNBUFFERED=1")
 	cmd.Stderr = os.Stderr
@@ -32,7 +34,7 @@ func main() {
 		panic(err)
 	}
 
-	node, err := node.InitializeNode(in, out)
+	node, err := node.InitializeNode(in, out, "source-directory")
 	if err != nil {
 		panic(err)
 	}
@@ -58,7 +60,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Printf("%+v", result)
+	fmt.Printf("%+v\n", result)
 
 	err = cmd.Wait()
 	if err != nil {

@@ -1,4 +1,4 @@
-package common
+package config
 
 import (
 	"reflect"
@@ -6,21 +6,23 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-type ConfigStructure struct {
+type config struct {
 	BatchSize int `toml:"batch_size"`
+	Nodes map[string]any `toml:"nodes"`
 }
 
-var Config ConfigStructure
-var Default = ConfigStructure {
+var Config config
+var Default = config {
 	BatchSize: 1024,
+	Nodes: map[string]any{},
 }
 
-const ConfigPath = "config.toml"
+const configPath = "config.toml"
 
-func LoadConfig() (ConfigStructure, error) {
-	_, err := toml.DecodeFile(ConfigPath, &Config)
+func LoadConfig() error {
+	_, err := toml.DecodeFile(configPath, &Config)
 	if err != nil {
-		return ConfigStructure{}, err
+		return err
 	}
 
 	// set default values for keys not found in options file
@@ -34,7 +36,7 @@ func LoadConfig() (ConfigStructure, error) {
 		f.Set(reflect.ValueOf(Default).Field(i))
 	}
 
-	return Config, nil
+	return nil
 
 }
 
