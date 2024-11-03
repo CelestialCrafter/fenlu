@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
+	"os/exec"
 
 	"github.com/CelestialCrafter/fenlu/config"
 	"github.com/CelestialCrafter/fenlu/protocol"
@@ -12,13 +14,14 @@ import (
 )
 
 type BaseNode struct {
-	in io.Writer
-	capabilities []string
+	writer io.Writer
+	reader io.Reader
+	capabilities map[string]struct{}
 	pendingRequests map[int]chan *protocol.Response
 }
 
-func responseReader(n *BaseNode, input io.Reader) {
-	decoder := json.NewDecoder(input)
+func (n *BaseNode) responseReader() {
+	decoder := json.NewDecoder(n.reader)
 	for {
 		response := new(protocol.Response)
 
@@ -44,24 +47,53 @@ func responseReader(n *BaseNode, input io.Reader) {
 	}
 }
 
-func InitializeNode(in io.Writer, out io.Reader, name string) (Node, error) {
+func commandSetup(cmd *exec.Cmd) (io.Reader, io.Writer, error) {
+	// pipes & start
+	cmd.Stderr = os.Stderr
+
+	reader, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	writer, err := cmd.StdinPipe()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return reader, writer, nil
+}
+
+func InitializeNode(cmd *exec.Cmd, name string) (Node, error) {
+	reader, writer, err := commandSetup(cmd)
+	if err != nil {
+		panic(err)
+	}
+
 	n := &BaseNode{
 		pendingRequests: make(map[int]chan *protocol.Response),
-		in: in,
+		capabilities: make(map[string]struct{}),
+		reader: reader,
+		writer: writer,
 	}
 
 	// response reader
-	go responseReader(n, out)
+	go n.responseReader()
 
 	// initialization
 	// @TODO fill in params
 	request := protocol.NewRequest(protocol.InitializeMethod, protocol.InitializeParams{
 		BatchSize: config.Config.BatchSize,
-		Config: config.Config.Nodes[name],
+		Config: config.Config.Nodes[name].Config,
 	})
 
 	result := new(protocol.InitializeResult)
-	err := n.Request(request, result)
+	err = n.Request(request, result)
 	if err != nil {
 		return n, err
 	}
@@ -70,7 +102,10 @@ func InitializeNode(in io.Writer, out io.Reader, name string) (Node, error) {
 		panic(fmt.Sprintf("node version did not match protocol version: %v, %v\n", result.Version, protocol.Version))
 	}
 
-	n.capabilities = result.Capabilities
+	// capabilities
+	for _, method := range result.Capabilities {
+		n.capabilities[method] = struct{}{}
+	}
 
 	return n, err
 }
@@ -83,12 +118,14 @@ func (n *BaseNode) Request(request protocol.Request, value any) error {
 		return err
 	}
 
-	_, err = n.in.Write(append(marshalled, '\n'))
+	_, err = n.writer.Write(append(marshalled, '\n'))
 	if err != nil {
 		return err
 	}
 
 	response := <-n.pendingRequests[request.ID]
+	delete(n.pendingRequests, request.ID)
+
 	err = mapstructure.Decode(response.Result, value)
 	if err != nil {
 		return err
@@ -101,6 +138,6 @@ func (n *BaseNode) Request(request protocol.Request, value any) error {
 	return nil
 }
 
-func (n *BaseNode) Capabilities() []string {
+func (n *BaseNode) Capabilities() map[string]struct{} {
 	return n.capabilities
 }

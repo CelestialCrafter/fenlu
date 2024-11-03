@@ -22,7 +22,7 @@ def handle_source(params):
 
         media.append({
             'url': 'file:///' + quote(path.lstrip('/'), safe=':/'),
-            'type': 'Image',
+            'type': 'image',
             'essentialMetadata': {
                 'title': os.path.basename(path),
                 'creation': int(os.path.getmtime(path) * 1000)
