@@ -5,5 +5,5 @@ type Media struct {
 	Type Type `json:"type"`
 	EssentialMetadata `json:"essentialMetadata"`
 	TypeMetadata `json:"typeMetadata"`
-	NodeMetadata `json:"nodeMetadata"`
+	ExtraMetadata `json:"extraMetadata"`
 }

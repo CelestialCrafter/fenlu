@@ -17,7 +17,7 @@ func main() {
 	config.LoadConfig()
 
 	// setup
-	name := "source-directory"
+	name := "source-pixiv"
 	n, err := node.InitializeNode(createCmd(name), name)
 	if err != nil {
 		panic(err)
