@@ -5,6 +5,7 @@ import (
 )
 
 type Node interface {
+	// @TODO add context to request
 	Request(protocol.Request, any) error 
 	Capabilities() map[string]struct{}
 }

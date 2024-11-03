@@ -25,7 +25,7 @@ def handle_source(params):
             'type': 'image',
             'essentialMetadata': {
                 'title': os.path.basename(path),
-                'creation': int(os.path.getmtime(path) * 1000)
+                'creation': os.path.getmtime(path)
             },
             'typeMetadata': {
                 'width': image.width,
