@@ -22,6 +22,7 @@ func (s *Source) Generate(state int) ([]media.Media, bool, error) {
 		result,
 	)
 
+	// @TODO remove this? along with the types. they shouldnt be used anywhere in the core codebase
 	newMedia := make([]media.Media, len(result.Media))
 	for i, m := range result.Media {
 		originalTypeMetadata := m.TypeMetadata
