@@ -1,19 +1,21 @@
 package main
 
 import (
+	"fmt"
 	"os/exec"
 	"sync"
 
 	"github.com/CelestialCrafter/fenlu/config"
 	"github.com/CelestialCrafter/fenlu/media"
 	"github.com/CelestialCrafter/fenlu/node"
+	"github.com/CelestialCrafter/fenlu/protocol"
 )
 
-func runSinks(wg *sync.WaitGroup, cmds []*exec.Cmd, mediaChannel <-chan []media.Media) (chan error, error) {
-	sinks := config.Config.Pipeline.Sinks
+func runSinks(wg *sync.WaitGroup, cmds []*exec.Cmd, input <-chan []media.Media) (chan error, error) {
+	sinks := make([]node.Sink, len(config.Config.Pipeline.Sinks))
 	errorChannel := make(chan error)
 
-	for _, name := range sinks {
+	for i, name := range config.Config.Pipeline.Sinks {
 		cmd :=  createCmd(name)
 		cmds = append(cmds, cmd)
 
@@ -21,10 +23,20 @@ func runSinks(wg *sync.WaitGroup, cmds []*exec.Cmd, mediaChannel <-chan []media.
 		if err != nil {
 			return nil, err
 		}
-		sink := node.Sink{Node: n}
+		_, ok := n.Capabilities()[protocol.SinkMethod]
+		if !ok {
+			panic(fmt.Sprintln(protocol.SinkMethod, " unsupported on node: ", name))
+		}
+		sinks[i] = node.Sink{Node: n}
 
-		go func()  {
-			for media := range mediaChannel {
+	}
+
+	// why is the whitespace fucking exponential
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for media := range input {
+			for _, sink := range sinks {
 				go func() {
 					err := sink.Sink(media)
 					if err != nil {
@@ -32,9 +44,8 @@ func runSinks(wg *sync.WaitGroup, cmds []*exec.Cmd, mediaChannel <-chan []media.
 					}
 				}()
 			}
-
-		}()
-	}
+		}
+	}()
 
 	return errorChannel, nil
 }

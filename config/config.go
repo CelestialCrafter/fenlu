@@ -15,7 +15,7 @@ type node struct {
 type pipeline struct {
 	Sources []string `toml:"sources"`
 	Sinks []string `toml:"sinks"`
-	TransformsFilters []string `toml:"transforms_filters"`
+	Processors []string `toml:"processors"`
 }
 
 type logLevel struct {
@@ -30,6 +30,7 @@ func (l *logLevel) UnmarshalText(text []byte) error {
 
 type config struct {
 	BatchSize int `toml:"batch_size"`
+	BufferSize int `toml:"buffer_size"`
 	Pipeline pipeline `toml:"pipeline"`
 	LogLevel logLevel `toml:"log_level"`
 	Nodes map[string]node `toml:"nodes"`
@@ -38,6 +39,7 @@ type config struct {
 var Config config
 var Default = config {
 	BatchSize: 1024,
+	BufferSize: 10,
 	Nodes: map[string]node{},
 	Pipeline: pipeline{},
 	LogLevel: logLevel{Level: log.InfoLevel},
