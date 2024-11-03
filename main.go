@@ -14,10 +14,13 @@ func createCmd(name string) *exec.Cmd {
 }
 
 func main() {
-	config.LoadConfig()
+	err := config.LoadConfig()
+	if err != nil {
+		panic(err)
+	}
 
 	// setup
-	name := "source-directory"
+	name := "source-pixiv"
 	n, err := node.InitializeNode(createCmd(name), name)
 	if err != nil {
 		panic(err)
@@ -31,7 +34,19 @@ func main() {
 	}
 	sink := node.Sink{Node: n}
 
+	name = "transform-proxy"
+	n, err = node.InitializeNode(createCmd(name), name)
+	if err != nil {
+		panic(err)
+	}
+	transform := node.Transform{Node: n}
+
 	media, _, err := source.Generate(0)
+	if err != nil {
+		panic(err)
+	}
+
+	media, err = transform.Transform(media)
 	if err != nil {
 		panic(err)
 	}
