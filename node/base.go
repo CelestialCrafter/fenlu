@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/CelestialCrafter/fenlu/config"
 	"github.com/CelestialCrafter/fenlu/protocol"
 	"github.com/go-viper/mapstructure/v2"
 )
@@ -43,7 +44,7 @@ func responseReader(n *BaseNode, input io.Reader) {
 	}
 }
 
-func InitializeNode(in io.Writer, out io.Reader) (Node, error) {
+func InitializeNode(in io.Writer, out io.Reader, name string) (Node, error) {
 	n := &BaseNode{
 		pendingRequests: make(map[int]chan *protocol.Response),
 		in: in,
@@ -54,7 +55,10 @@ func InitializeNode(in io.Writer, out io.Reader) (Node, error) {
 
 	// initialization
 	// @TODO fill in params
-	request := protocol.NewRequest(protocol.InitializeMethod, protocol.InitializeParams{})
+	request := protocol.NewRequest(protocol.InitializeMethod, protocol.InitializeParams{
+		BatchSize: config.Config.BatchSize,
+		Config: config.Config.Nodes[name],
+	})
 
 	result := new(protocol.InitializeResult)
 	err := n.Request(request, result)

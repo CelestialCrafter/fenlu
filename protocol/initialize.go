@@ -3,7 +3,7 @@ package protocol
 const InitializeMethod = "initialize/initialize"
 type InitializeParams struct {
 	BatchSize int `json:"batchSize"`
-	Config interface{} `json:"config"`
+	Config any `json:"config"`
 }
 
 type InitializeResult struct {
