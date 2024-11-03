@@ -6,7 +6,7 @@ def handle_sink(params):
 
 def handle_initialize(_):
     return {
-        'version': "95a4fc300cc044cebe957d4fbd829b822bf59a77",
+        'version': "95a247050de65c132541eabe3d93ca0b7c9b5a65",
         'capabilities':  ["media/sink"]
     }
 
