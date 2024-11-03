@@ -7,10 +7,10 @@ import (
 )
 
 type Source struct {
-	Node
+	*Node
 }
 
-func (s *Source) Generate(state int) ([]media.Media, bool, error) {
+func (s Source) Generate(state int) ([]media.Media, bool, error) {
 	result := new(protocol.SourceResult)
 	err := s.Request(
 		protocol.NewRequest(

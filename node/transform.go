@@ -6,10 +6,10 @@ import (
 )
 
 type Transform struct {
-	Node
+	*Node
 }
 
-func (t *Transform) Transform(media []media.Media) ([]media.Media, error) {
+func (t Transform) Transform(media []media.Media) ([]media.Media, error) {
 	result := new(protocol.TransformResult)
 	err := t.Request(
 		protocol.NewRequest(
