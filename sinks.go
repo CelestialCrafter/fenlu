@@ -9,6 +9,7 @@ import (
 	"github.com/CelestialCrafter/fenlu/media"
 	"github.com/CelestialCrafter/fenlu/node"
 	"github.com/CelestialCrafter/fenlu/protocol"
+	"github.com/charmbracelet/log"
 )
 
 func runSinks(wg *sync.WaitGroup, cmds []*exec.Cmd, input <-chan []media.Media) (chan error, error) {
@@ -35,6 +36,8 @@ func runSinks(wg *sync.WaitGroup, cmds []*exec.Cmd, input <-chan []media.Media) 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		defer log.Info("sinks finished")
+
 		for media := range input {
 			for _, sink := range sinks {
 				go func() {

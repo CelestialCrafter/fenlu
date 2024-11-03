@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"sync"
@@ -12,17 +13,20 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-func runSource(channel chan<- []media.Media, source node.Source) error {
+func runSource(output chan<- []media.Media, source node.Source, ctx context.Context) error {
 	state := 0
 	for {
+		if ctx.Err() != nil {
+			break
+		}
+
 		media, finished, err := source.Generate(state)
 		if err != nil {
 			return err
 		}
 
-		channel <- media
+		output <- media
 		state++
-
 		if finished {
 			break
 		}
@@ -31,12 +35,13 @@ func runSource(channel chan<- []media.Media, source node.Source) error {
 	return nil
 }
 
-func runSources(wg *sync.WaitGroup, cmds []*exec.Cmd) (<-chan []media.Media, <-chan error, error) {
+func runSources(wg *sync.WaitGroup, cmds []*exec.Cmd, ctx context.Context) (<-chan []media.Media, chan error, error) {
 	sources := config.Config.Pipeline.Sources
 	bufferSize := config.Config.BufferSize * len(sources)
 
 	output := make(chan []media.Media, bufferSize)
 	errors := make(chan error)
+	sourceWg := sync.WaitGroup{}
 
 	for _, name := range sources {
 		cmd := createCmd(name)
@@ -53,16 +58,23 @@ func runSources(wg *sync.WaitGroup, cmds []*exec.Cmd) (<-chan []media.Media, <-c
 		source := node.Source{Node: n}
 
 		wg.Add(1)
-		go func()  {
+		sourceWg.Add(1)
+		go func() {
 			defer wg.Done()
+			defer sourceWg.Done()
 
-			err := runSource(output, source)
+			err := runSource(output, source, ctx)
 			if err != nil {
-				log.Error(err)
 				errors <- err
 			}
 		}()
 	}
+
+	go func() {
+		defer close(output)
+		defer log.Info("sources finished")
+		sourceWg.Wait()
+	}()
 
 	return output, errors, nil
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os/exec"
 	"strings"
 	"sync"
@@ -28,11 +29,12 @@ type pipeline struct {
 	Sinks []node.Sink
 }
 
-func handleNodeErrors(errorChannels ...<-chan error) {
+func handleNodeErrors(cancel context.CancelFunc, errorChannels ...<-chan error) {
 	for _, channel := range errorChannels {
 		go func() {
 			for err := range channel {
-				log.Error("node errored", "error", err)
+				log.Error("node errored; flushing pipeline", "error", err)
+				cancel()
 			}
 		}()
 	}
@@ -48,8 +50,9 @@ func main() {
 	wg := sync.WaitGroup{}
 	totalNodes := len(config.Config.Pipeline.Sources) + len(config.Config.Pipeline.Sinks) + len(config.Config.Pipeline.Processors)
 	cmds := make([]*exec.Cmd, 0, totalNodes)
+	ctx, cancel := context.WithCancel(context.Background())
 
-	sourceMedia, sourceErrors, err := runSources(&wg, cmds)
+	sourceMedia, sourceErrors, err := runSources(&wg, cmds, ctx)
 	if err != nil {
 		log.Fatal("could not initialize sources", "error", err)
 	}
@@ -61,10 +64,16 @@ func main() {
 		log.Fatal("could not initialize sinks", "error", err)
 	}
 
-	go handleNodeErrors(sourceErrors, processorErrors, sinkErrors)
+	go handleNodeErrors(cancel, sourceErrors, processorErrors, sinkErrors)
 
 	wg.Wait()
-	for _, cmd := range cmds {
-		handleCmd(cmd)
-	}
+	defer func() {
+		close(sourceErrors)
+		close(processorErrors)
+		close(sinkErrors)
+
+		for _, cmd := range cmds {
+			handleCmd(cmd)
+		}
+	}()
 }
