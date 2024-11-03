@@ -14,8 +14,8 @@ def transform(post):
         post['updateDate'].replace('-', '/').replace('T', '/').replace(':', '/'),
     )
 
-    return [({
-        'url': f'http://i.pximg.net/img-master/img/{dateSegment}/{post['id']}_p{page}_master1200.jpg',
+    return [{
+        'url': f'https://i.pximg.net/img-master/img/{dateSegment}/{post['id']}_p{page}_master1200.jpg',
         'type': 'image',
         'essentialMetadata': {
             'title': post['title'],
@@ -27,8 +27,9 @@ def transform(post):
         },
         'extraMetadata': {
             'tags': post['tags'],
+            'pixivUrl': 'https://www.pixiv.net/artworks/' + post['id']
         }
-    }, post['id']) for page in range(post['pageCount'])]
+    } for page in range(post['pageCount'])]
 
 def handle_source(params):
     time.sleep(config['request_delay'])
@@ -51,7 +52,7 @@ def handle_source(params):
     if data['error']:
         raise Exception(data['message'])
 
-    media, extra = list(zip(*[
+    media = [
         x
         for post in filter(
             lambda post: post['illustType'] == 0
@@ -59,9 +60,9 @@ def handle_source(params):
             data['body']['works'],
             )
         for x in transform(post)
-    ]))
+    ]
 
-    return {'media': media, 'extra': extra, 'finished': len(data['body']['works']) < max}
+    return {'media': media, 'finished': len(data['body']['works']) < max}
 
 def handle_initialize(params):
     global config

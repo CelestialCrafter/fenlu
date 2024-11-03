@@ -2,9 +2,11 @@ package main
 
 import (
 	"os/exec"
+	"slices"
 	"strings"
 
 	"github.com/CelestialCrafter/fenlu/config"
+	"github.com/CelestialCrafter/fenlu/media"
 	"github.com/CelestialCrafter/fenlu/node"
 )
 
@@ -27,12 +29,12 @@ func main() {
 	}
 	source := node.Source{Node: n}
 
-	name = "sink-print"
+	name = "filter-tags"
 	n, err = node.InitializeNode(createCmd(name), name)
 	if err != nil {
 		panic(err)
 	}
-	sink := node.Sink{Node: n}
+	filter := node.Filter{Node: n}
 
 	name = "transform-proxy"
 	n, err = node.InitializeNode(createCmd(name), name)
@@ -41,17 +43,41 @@ func main() {
 	}
 	transform := node.Transform{Node: n}
 
-	media, _, err := source.Generate(0)
+	name = "sink-print"
+	n, err = node.InitializeNode(createCmd(name), name)
+	if err != nil {
+		panic(err)
+	}
+	sink := node.Sink{Node: n}
+
+	// source
+	sourced, _, err := source.Generate(0)
 	if err != nil {
 		panic(err)
 	}
 
-	media, err = transform.Transform(media)
+	// filter
+	filtered := make([]media.Media, 0, len(sourced))
+	filterResult, err := filter.Filter(sourced)
 	if err != nil {
 		panic(err)
 	}
 
-	err = sink.Sink(media)
+	for i, included := range filterResult {
+		if included {
+			filtered = append(filtered, sourced[i])
+		}
+	}
+	filtered = slices.Clip(filtered)
+
+	// transform
+	transformed, err := transform.Transform(filtered)
+	if err != nil {
+		panic(err)
+	}
+
+	// sink
+	err = sink.Sink(transformed)
 	if err != nil {
 		panic(err)
 	}
