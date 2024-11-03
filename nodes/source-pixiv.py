@@ -28,6 +28,7 @@ def transform(post):
         },
         'extraMetadata': {
             'tags': post['tags'],
+            'page': page,
             'pixivUrl': 'https://www.pixiv.net/artworks/' + post['id']
         }
     } for page in range(post['pageCount'])]

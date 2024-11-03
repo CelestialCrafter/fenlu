@@ -46,7 +46,7 @@ func main() {
 	config.SetupLogger()
 
 	wg := sync.WaitGroup{}
-	totalNodes := len(config.Config.Pipeline.Sources) + len(config.Config.Pipeline.Sinks) + len(config.Config.Pipeline.TransformsFilters)
+	totalNodes := len(config.Config.Pipeline.Sources) + len(config.Config.Pipeline.Sinks) + len(config.Config.Pipeline.Processors)
 	cmds := make([]*exec.Cmd, 0, totalNodes)
 
 	sourceMedia, sourceErrors, err := runSources(&wg, cmds)
@@ -54,12 +54,14 @@ func main() {
 		log.Fatal("could not initialize sources", "error", err)
 	}
 
-	sinkErrors, err := runSinks(&wg, cmds, sourceMedia)
+	processorMedia, processorErrors, err := runProcessors(&wg, cmds, sourceMedia)
+
+	sinkErrors, err := runSinks(&wg, cmds, processorMedia)
 	if err != nil {
 		log.Fatal("could not initialize sinks", "error", err)
 	}
 
-	go handleNodeErrors(sourceErrors, sinkErrors)
+	go handleNodeErrors(sourceErrors, processorErrors, sinkErrors)
 
 	wg.Wait()
 	for _, cmd := range cmds {
