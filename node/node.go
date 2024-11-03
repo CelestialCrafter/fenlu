@@ -6,6 +6,6 @@ import (
 
 type Node interface {
 	Request(protocol.Request, any) error 
-	Capabilities() []string
+	Capabilities() map[string]struct{}
 }
 

@@ -6,15 +6,20 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
+type node struct {
+	Command string `toml:"command"`
+	Config any `toml:"config"`
+}
+
 type config struct {
 	BatchSize int `toml:"batch_size"`
-	Nodes map[string]any `toml:"nodes"`
+	Nodes map[string]node `toml:"nodes"`
 }
 
 var Config config
 var Default = config {
 	BatchSize: 1024,
-	Nodes: map[string]any{},
+	Nodes: map[string]node{},
 }
 
 const configPath = "config.toml"

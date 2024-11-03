@@ -1,68 +1,42 @@
 package main
 
 import (
-	"fmt"
-	"io"
-	"os"
 	"os/exec"
-	"time"
+	"strings"
 
 	"github.com/CelestialCrafter/fenlu/config"
 	"github.com/CelestialCrafter/fenlu/node"
-	"github.com/CelestialCrafter/fenlu/protocol"
 )
+
+func createCmd(name string) *exec.Cmd {
+	command := strings.Split(config.Config.Nodes[name].Command, " ")
+	return exec.Command(command[0], command[1:]...)
+}
 
 func main() {
 	config.LoadConfig()
-	cmd := exec.Command("python", "nodes/source-directory.py")
-	cmd.Env = append(cmd.Env, "PYTHONUNBUFFERED=1")
-	cmd.Stderr = os.Stderr
 
-	in, err := cmd.StdinPipe()
+	// setup
+	name := "source-directory"
+	n, err := node.InitializeNode(createCmd(name), name)
+	if err != nil {
+		panic(err)
+	}
+	source := node.Source{Node: n}
+
+	name = "sink-print"
+	n, err = node.InitializeNode(createCmd(name), name)
+	if err != nil {
+		panic(err)
+	}
+	sink := node.Sink{Node: n}
+
+	media, _, err := source.Generate(0)
 	if err != nil {
 		panic(err)
 	}
 
-	var out io.Reader
-	out, err = cmd.StdoutPipe()
-	if err != nil {
-		panic(err)
-	}
-
-	err = cmd.Start()
-	if err != nil {
-		panic(err)
-	}
-
-	node, err := node.InitializeNode(in, out, "source-directory")
-	if err != nil {
-		panic(err)
-	}
-
-	go func() {
-		time.Sleep(time.Second * 2)
-		cmd.Process.Kill()
-	}()
-
-	fmt.Println(node.Capabilities())
-
-	result := new(protocol.SourceResult)
-	err = node.Request(
-		protocol.NewRequest(
-			protocol.SourceMethod,
-			protocol.SourceParams{
-				State: 0,
-			},
-		), 
-		result,
-	)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Printf("%+v\n", result)
-
-	err = cmd.Wait()
+	err = sink.Sink(media)
 	if err != nil {
 		panic(err)
 	}
