@@ -1,6 +1,7 @@
 import re
 import time
 import requests
+from itertools import chain
 from datetime import datetime
 
 from common import listen
@@ -51,16 +52,10 @@ def handle_source(params):
     data = requests.get(url, headers=headers).json()
     if data['error']:
         raise Exception(data['message'])
-
-    media = [
-        x
-        for post in filter(
-            lambda post: post['illustType'] == 0
-            and post['updateDate'] != '1970-01-01T00:00:00+09:00',
-            data['body']['works'],
-            )
-        for x in transform(post)
-    ]
+    media = list(chain.from_iterable(map(transform, filter(
+            lambda post: post['illustType'] == 0 and post['updateDate'] != '1970-01-01T00:00:00+09:00',
+            data['body']['works']
+    ))))
 
     return {'media': media, 'finished': len(data['body']['works']) < max}
 
