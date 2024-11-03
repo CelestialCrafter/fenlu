@@ -93,7 +93,6 @@ func InitializeNode(cmd *exec.Cmd, name string) (*Node, error) {
 	go n.responseReader()
 
 	// initialization
-	// @TODO fill in params
 	request := protocol.NewRequest(protocol.InitializeMethod, protocol.InitializeParams{
 		BatchSize: config.Config.BatchSize,
 		Config: config.Config.Nodes[name].Config,
@@ -145,7 +144,7 @@ func (n *Node) Request(request protocol.Request, value any) error {
 	}
 
 	if response.Error != "" {
-		return errors.New(response.Error)
+		return fmt.Errorf("request %d errored: %w", request.ID, errors.New(response.Error))
 	}
 
 	return nil
