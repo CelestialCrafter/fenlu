@@ -17,7 +17,7 @@ def handle_source(params):
     for path in files[batch_size * state:batch_size * (state + 1)]:
         try:
             image = Image.open(path)
-        except UnidentifiedImageError:
+        except (UnidentifiedImageError, IsADirectoryError):
             continue
 
         media.append({
@@ -45,7 +45,11 @@ def handle_initialize(params):
 
     config = params['config']
     batch_size = params['batchSize']
-    files = files = [os.path.join(root, file) for root, _, files in os.walk(os.path.expanduser(config['path'])) for file in files]
+    dir = os.path.expanduser(config['path'])
+    if config['walk']:
+        files = [os.path.join(root, file) for root, _, files in os.walk(dir) for file in files]
+    else:
+        files = [os.path.join(dir, file) for file in os.listdir(dir)]
 
     return {
         'version': "95a247050de65c132541eabe3d93ca0b7c9b5a65",
