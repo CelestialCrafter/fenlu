@@ -6,10 +6,10 @@ import (
 )
 
 type Sink struct {
-	Node
+	*Node
 }
 
-func (s *Sink) Sink(media []media.Media) error {
+func (s Sink) Sink(media []media.Media) error {
 	return s.Request(
 		protocol.NewRequest(
 			protocol.SinkMethod,

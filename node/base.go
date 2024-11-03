@@ -15,7 +15,7 @@ import (
 	"github.com/puzpuzpuz/xsync/v3"
 )
 
-type BaseNode struct {
+type Node struct {
 	writer io.Writer
 	reader io.Reader
 	name string
@@ -23,7 +23,7 @@ type BaseNode struct {
 	pendingRequests *xsync.MapOf[int, chan *protocol.Response]
 }
 
-func (n *BaseNode) responseReader() {
+func (n *Node) responseReader() {
 	decoder := json.NewDecoder(n.reader)
 	for {
 		response := new(protocol.Response)
@@ -75,13 +75,13 @@ func commandSetup(cmd *exec.Cmd) (io.Reader, io.Writer, error) {
 	return reader, writer, nil
 }
 
-func InitializeNode(cmd *exec.Cmd, name string) (Node, error) {
+func InitializeNode(cmd *exec.Cmd, name string) (*Node, error) {
 	reader, writer, err := commandSetup(cmd)
 	if err != nil {
 		panic(err)
 	}
 
-	n := &BaseNode{
+	n := &Node{
 		pendingRequests: xsync.NewMapOf[int, chan *protocol.Response](),
 		capabilities: make(map[string]struct{}),
 		reader: reader,
@@ -119,7 +119,7 @@ func InitializeNode(cmd *exec.Cmd, name string) (Node, error) {
 	return n, err
 }
 
-func (n *BaseNode) Request(request protocol.Request, value any) error {
+func (n *Node) Request(request protocol.Request, value any) error {
 	log.Debug("making request", "name", n.name, "method", request.Method, "id", request.ID)
 
 	channel := make(chan *protocol.Response, 1)
@@ -151,6 +151,6 @@ func (n *BaseNode) Request(request protocol.Request, value any) error {
 	return nil
 }
 
-func (n *BaseNode) Capabilities() map[string]struct{} {
+func (n *Node) Capabilities() map[string]struct{} {
 	return n.capabilities
 }

@@ -6,12 +6,12 @@ import (
 )
 
 type Filter struct {
-	Node
+	*Node
 }
 
-func (t *Filter) Filter(media []media.Media) ([]bool, error) {
+func (f Filter) Filter(media []media.Media) ([]bool, error) {
 	result := new(protocol.FilterResult)
-	err := t.Request(
+	err := f.Request(
 		protocol.NewRequest(
 			protocol.FilterMethod,
 			protocol.FilterParams(media),
