@@ -16,7 +16,7 @@ func (s *Source) Generate(state int) ([]media.Media, bool, error) {
 		protocol.NewRequest(
 			protocol.SourceMethod,
 			protocol.SourceParams{
-				State: 0,
+				State: state,
 			},
 		), 
 		result,

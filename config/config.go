@@ -4,6 +4,7 @@ import (
 	"reflect"
 
 	"github.com/BurntSushi/toml"
+	"github.com/charmbracelet/log"
 )
 
 type node struct {
@@ -11,8 +12,26 @@ type node struct {
 	Config any `toml:"config"`
 }
 
+type pipeline struct {
+	Sources []string `toml:"sources"`
+	Sinks []string `toml:"sinks"`
+	TransformsFilters []string `toml:"transforms_filters"`
+}
+
+type logLevel struct {
+	log.Level
+}
+
+func (l *logLevel) UnmarshalText(text []byte) error {
+	var err error
+	l.Level, err = log.ParseLevel(string(text))
+	return err
+}
+
 type config struct {
 	BatchSize int `toml:"batch_size"`
+	Pipeline pipeline `toml:"pipeline"`
+	LogLevel logLevel `toml:"log_level"`
 	Nodes map[string]node `toml:"nodes"`
 }
 
@@ -20,6 +39,8 @@ var Config config
 var Default = config {
 	BatchSize: 1024,
 	Nodes: map[string]node{},
+	Pipeline: pipeline{},
+	LogLevel: logLevel{Level: log.InfoLevel},
 }
 
 const configPath = "config.toml"
@@ -41,7 +62,7 @@ func LoadConfig() error {
 		f.Set(reflect.ValueOf(Default).Field(i))
 	}
 
+	log.Debug("config loaded", "config", Config)
 	return nil
-
 }
 

@@ -10,40 +10,46 @@ import (
 
 	"github.com/CelestialCrafter/fenlu/config"
 	"github.com/CelestialCrafter/fenlu/protocol"
+	"github.com/charmbracelet/log"
 	"github.com/go-viper/mapstructure/v2"
+	"github.com/puzpuzpuz/xsync/v3"
 )
 
 type BaseNode struct {
 	writer io.Writer
 	reader io.Reader
+	name string
 	capabilities map[string]struct{}
-	pendingRequests map[int]chan *protocol.Response
+	pendingRequests *xsync.MapOf[int, chan *protocol.Response]
 }
 
 func (n *BaseNode) responseReader() {
 	decoder := json.NewDecoder(n.reader)
 	for {
 		response := new(protocol.Response)
-
 		err := decoder.Decode(response)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
 			}
 
-			panic(fmt.Sprintln("could not decode response: ", err))
+			log.Error("could not decode response", "error", err)
+			continue
 		}
-
-		if n.pendingRequests[response.ID] == nil {
-			panic(fmt.Sprintln("received response with no request pending: ", response))
-		}
-
 
 		if response.Result == nil && response.Error == "" {
-			panic(fmt.Sprintln("request did not have response or error: ", response.ID))
+			log.Error("request did not have response or error: ", "response", response)
+			continue
 		}
 
-		n.pendingRequests[response.ID] <- response
+
+		channel, ok := n.pendingRequests.Load(response.ID)
+		if !ok {
+			log.Error("received response with no request pending", "response", response)
+			continue
+		}
+
+		channel <- response
 	}
 }
 
@@ -76,10 +82,11 @@ func InitializeNode(cmd *exec.Cmd, name string) (Node, error) {
 	}
 
 	n := &BaseNode{
-		pendingRequests: make(map[int]chan *protocol.Response),
+		pendingRequests: xsync.NewMapOf[int, chan *protocol.Response](),
 		capabilities: make(map[string]struct{}),
 		reader: reader,
 		writer: writer,
+		name: name,
 	}
 
 	// response reader
@@ -99,7 +106,7 @@ func InitializeNode(cmd *exec.Cmd, name string) (Node, error) {
 	}
 
 	if result.Version != protocol.Version {
-		panic(fmt.Sprintf("node version did not match protocol version: %v, %v\n", result.Version, protocol.Version))
+		return n, fmt.Errorf("node version did not match protocol version: %v, %v\n", result.Version, protocol.Version)
 	}
 
 	// capabilities
@@ -107,11 +114,16 @@ func InitializeNode(cmd *exec.Cmd, name string) (Node, error) {
 		n.capabilities[method] = struct{}{}
 	}
 
+	log.Info("initialized node", "name", name)
+
 	return n, err
 }
 
 func (n *BaseNode) Request(request protocol.Request, value any) error {
-	n.pendingRequests[request.ID] = make(chan *protocol.Response, 1)
+	log.Debug("making request", "name", n.name, "method", request.Method, "id", request.ID)
+
+	channel := make(chan *protocol.Response, 1)
+	n.pendingRequests.Store(request.ID, channel) 
 
 	marshalled, err := json.Marshal(request)
 	if err != nil {
@@ -123,8 +135,9 @@ func (n *BaseNode) Request(request protocol.Request, value any) error {
 		return err
 	}
 
-	response := <-n.pendingRequests[request.ID]
-	delete(n.pendingRequests, request.ID)
+	response := <-channel
+	log.Debug("received response", "id", response.ID)
+	n.pendingRequests.Delete(response.ID)
 
 	err = mapstructure.Decode(response.Result, value)
 	if err != nil {
