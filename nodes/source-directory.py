@@ -4,10 +4,6 @@ from PIL import Image, UnidentifiedImageError
 
 from common import listen
 
-files = []
-config = {}
-batch_size = 0
-
 def handle_source(params):
     global files
 
