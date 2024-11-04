@@ -1,10 +1,8 @@
-use std::collections::HashMap;
-
 use eyre::{ErrReport, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::config::Config;
+use crate::{config::Config, media::Media};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Request {
@@ -32,30 +30,6 @@ impl Response {
 pub const INITIALIZE_METHOD: &str = "initialize/initialize";
 pub const SINK_METHOD: &str = "media/sink";
 pub const VERSION: &str = "95a247050de65c132541eabe3d93ca0b7c9b5a65";
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct Media {
-	pub url: String,
-        pub essential_metadata: EssentialMetadata,
-        #[serde(flatten)]
-        pub type_metadata: TypeMetadata,
-        pub extra_metadata: Option<HashMap<String, Value>>
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct EssentialMetadata {
-    pub title: String,
-    pub creation: i64
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(tag = "type", content = "typeMetadata")]
-#[serde(rename_all = "camelCase")]
-pub enum TypeMetadata {
-    Image { width: u64, height: u64 },
-    PDF { author: String, summary: String },
-}
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct InitializeParams {

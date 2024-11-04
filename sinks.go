@@ -35,16 +35,16 @@ func runSinks(wg *sync.WaitGroup, cmds []*exec.Cmd, input <-chan []media.Media) 
 	}
 
 	// why is the whitespace fucking exponential
+	wg.Add(1)
 	go func() {
 		defer close(errors)
+		defer wg.Done()
 		defer log.Info("sinks finished")
 
 		for media := range input {
 			for _, sink := range sinks {
-				wg.Add(1)
 				sinkWg.Add(1)
 				go func() {
-					defer wg.Done()
 					defer sinkWg.Done()
 
 					err := sink.Sink(media)

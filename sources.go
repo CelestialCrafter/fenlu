@@ -57,11 +57,9 @@ func runSources(wg *sync.WaitGroup, cmds []*exec.Cmd, ctx context.Context) (<-ch
 		}
 		source := node.Source{Node: n}
 
-		wg.Add(1)
 		sourceWg.Add(1)
 		go func() {
 			defer wg.Done()
-			defer sourceWg.Done()
 
 			err := runSource(output, source, ctx)
 			if err != nil {
@@ -70,9 +68,11 @@ func runSources(wg *sync.WaitGroup, cmds []*exec.Cmd, ctx context.Context) (<-ch
 		}()
 	}
 
+	wg.Add(1)
 	go func() {
 		defer close(output)
 		defer close(errors)
+		defer wg.Done()
 		defer log.Info("sources finished")
 		sourceWg.Wait()
 	}()
