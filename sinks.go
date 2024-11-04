@@ -43,7 +43,6 @@ func runSinks(wg *sync.WaitGroup, cmds []*exec.Cmd, input <-chan []media.Media) 
 			for _, sink := range sinks {
 				wg.Add(1)
 				sinkWg.Add(1)
-
 				go func() {
 					defer wg.Done()
 					defer sinkWg.Done()
