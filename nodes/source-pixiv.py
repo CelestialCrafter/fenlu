@@ -6,8 +6,6 @@ from datetime import datetime
 
 from common import listen
 
-config = {}
-
 def transform(post):
     dateSegment = re.sub(
         r'\+.+',

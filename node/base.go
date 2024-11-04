@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/CelestialCrafter/fenlu/config"
 	"github.com/CelestialCrafter/fenlu/protocol"
@@ -119,7 +120,7 @@ func InitializeNode(cmd *exec.Cmd, name string) (*Node, error) {
 }
 
 func (n *Node) Request(request protocol.Request, value any) error {
-	log.Debug("making request", "name", n.name, "method", request.Method, "id", request.ID)
+	start := time.Now()
 
 	channel := make(chan *protocol.Response, 1)
 	n.pendingRequests.Store(request.ID, channel) 
@@ -135,13 +136,14 @@ func (n *Node) Request(request protocol.Request, value any) error {
 	}
 
 	response := <-channel
-	log.Debug("received response", "id", response.ID)
 	n.pendingRequests.Delete(response.ID)
 
 	err = mapstructure.Decode(response.Result, value)
 	if err != nil {
 		return err
 	}
+
+	log.Debug("finished request", "name", n.name, "method", request.Method, "id", request.ID, "duration", time.Since(start))
 
 	if response.Error != "" {
 		return fmt.Errorf("request %d errored: %w", request.ID, errors.New(response.Error))

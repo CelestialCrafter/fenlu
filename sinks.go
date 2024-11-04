@@ -47,6 +47,8 @@ func runSinks(wg *sync.WaitGroup, cmds []*exec.Cmd, input <-chan []media.Media) 
 					}
 				}()
 			}
+
+			log.Info("finished batch")
 		}
 	}()
 

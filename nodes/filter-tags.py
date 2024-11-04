@@ -1,7 +1,5 @@
 from common import listen
 
-config = {}
-
 def has(a, b):
     return any([tag in a for tag in b])
 

@@ -2,8 +2,6 @@ from urllib.parse import urlparse, urlunparse
 
 from common import listen
 
-config = {}
-
 def transform(media):
     for target in config['targets']:
         if target['match'] not in media['url']:
@@ -27,8 +25,6 @@ def transform(media):
 
 def handle_transform(params):
     return [transform(media) for media in params]
-
-
 
 def handle_initialize(params):
     global config
