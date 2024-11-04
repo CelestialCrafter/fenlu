@@ -18,14 +18,14 @@ def listen(handlers):
             if method not in handlers:
                 error = 'unknown method'
             else:
-                result = handlers[method](request['params']) or {}
+                result = handlers[method](request['params'])
         except Exception:
                 result = None
                 error = traceback.format_exc()
     
         print(json.dumps({
             'id': request['id'],
-            'result': result,
+            'result': {} if result is None else result,
             'error': error
         }))
     

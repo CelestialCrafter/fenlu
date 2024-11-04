@@ -14,7 +14,7 @@ def transform(post):
     )
 
     return [{
-        'url': f'https://i.pximg.net/img-master/img/{dateSegment}/{post['id']}_p{page}_master1200.jpg',
+        'url': f'http://i.pximg.net/img-master/img/{dateSegment}/{post['id']}_p{page}_master1200.jpg',
         'type': 'image',
         'essentialMetadata': {
             'title': post['title'],

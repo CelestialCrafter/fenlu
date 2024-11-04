@@ -12,9 +12,11 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-func runSinks(wg *sync.WaitGroup, cmds []*exec.Cmd, input <-chan []media.Media) (chan error, error) {
+func runSinks(wg *sync.WaitGroup, cmds []*exec.Cmd, input <-chan []media.Media) (<-chan error, error) {
 	sinks := make([]node.Sink, len(config.Config.Pipeline.Sinks))
-	errorChannel := make(chan error)
+
+	sinkWg := sync.WaitGroup{}
+	errors := make(chan error)
 
 	for i, name := range config.Config.Pipeline.Sinks {
 		cmd :=  createCmd(name)
@@ -33,25 +35,30 @@ func runSinks(wg *sync.WaitGroup, cmds []*exec.Cmd, input <-chan []media.Media) 
 	}
 
 	// why is the whitespace fucking exponential
-	wg.Add(1)
 	go func() {
-		defer wg.Done()
+		defer close(errors)
 		defer log.Info("sinks finished")
 
 		for media := range input {
 			for _, sink := range sinks {
+				wg.Add(1)
+				sinkWg.Add(1)
+
 				go func() {
+					defer wg.Done()
+					defer sinkWg.Done()
+
 					err := sink.Sink(media)
 					if err != nil {
-						errorChannel <- err
+						errors <- err
 					}
 				}()
 			}
-
-			log.Info("finished batch")
 		}
+
+		sinkWg.Wait()
 	}()
 
-	return errorChannel, nil
+	return errors, nil
 }
 

@@ -35,7 +35,7 @@ func runSource(output chan<- []media.Media, source node.Source, ctx context.Cont
 	return nil
 }
 
-func runSources(wg *sync.WaitGroup, cmds []*exec.Cmd, ctx context.Context) (<-chan []media.Media, chan error, error) {
+func runSources(wg *sync.WaitGroup, cmds []*exec.Cmd, ctx context.Context) (<-chan []media.Media, <-chan error, error) {
 	sources := config.Config.Pipeline.Sources
 	bufferSize := config.Config.BufferSize * len(sources)
 
@@ -72,6 +72,7 @@ func runSources(wg *sync.WaitGroup, cmds []*exec.Cmd, ctx context.Context) (<-ch
 
 	go func() {
 		defer close(output)
+		defer close(errors)
 		defer log.Info("sources finished")
 		sourceWg.Wait()
 	}()

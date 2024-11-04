@@ -140,7 +140,7 @@ func (n *Node) Request(request protocol.Request, value any) error {
 
 	err = mapstructure.Decode(response.Result, value)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not decode request: %w", err)
 	}
 
 	log.Debug("finished request", "name", n.name, "method", request.Method, "id", request.ID, "duration", time.Since(start))
