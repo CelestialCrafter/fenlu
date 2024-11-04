@@ -13,7 +13,7 @@ def transform(media):
 
         # its called an AUTHORITY not a "netloc". i hate this language
         # https://www.rfc-editor.org/rfc/rfc2396#section-3.2
-        url = url._replace(netloc=config['authority'], path=target['path'] + url.path)
+        url = url._replace(netloc=target['authority'], path=target['path'] + url.path)
 
         # "urlunparse".. really?
         media['extraMetadata']['originalUrl'] = media['url']
