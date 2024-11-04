@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/CelestialCrafter/fenlu/config"
 	"github.com/CelestialCrafter/fenlu/node"
@@ -47,6 +48,8 @@ func main() {
 	cmds := make([]*exec.Cmd, 0, totalNodes)
 	ctx, cancel := context.WithCancel(context.Background())
 
+	start := time.Now()
+
 	sourceMedia, sourceErrors, err := runSources(&wg, cmds, ctx)
 	if err != nil {
 		log.Fatal("could not initialize sources", "error", err)
@@ -70,4 +73,6 @@ func main() {
 			log.Fatal("process errored", "error", err)
 		}
 	}
+	
+	log.Info("finished pipeline", "duration", time.Since(start))
 }
