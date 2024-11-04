@@ -9,7 +9,13 @@
     in {
       devShells.x86_64-linux.default = pkgs.mkShell {
         packages = with pkgs; [
+          qt6.full
+          pkg-config
+
           go
+
+          rustc
+          cargo
 
           (python3.withPackages (python-pkgs: [
             python-pkgs.python

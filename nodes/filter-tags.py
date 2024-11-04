@@ -4,7 +4,7 @@ def has(a, b):
     return any([tag in a for tag in b])
 
 def filter(media):
-    if 'tags' not in media['extraMetadata']:
+    if media['extraMetadata'] is None or 'tags' not in media['extraMetadata']:
         return True
 
     tags = media['extraMetadata']['tags']
