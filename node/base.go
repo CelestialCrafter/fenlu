@@ -138,16 +138,17 @@ func (n *Node) Request(request protocol.Request, value any) error {
 	response := <-channel
 	n.pendingRequests.Delete(response.ID)
 
-	err = mapstructure.Decode(response.Result, value)
-	if err != nil {
-		return fmt.Errorf("could not decode request: %w", err)
-	}
-
 	log.Debug("finished request", "name", n.name, "method", request.Method, "id", request.ID, "duration", time.Since(start))
 
 	if response.Error != "" {
 		return fmt.Errorf("request %d errored: %w", request.ID, errors.New(response.Error))
 	}
+
+	err = mapstructure.Decode(response.Result, value)
+	if err != nil {
+		return fmt.Errorf("could not decode request: %w", err)
+	}
+
 
 	return nil
 }
