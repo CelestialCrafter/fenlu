@@ -17,11 +17,6 @@ func createCmd(name string) *exec.Cmd {
 }
 
 func handleCmd(cmd *exec.Cmd) {
-	err := cmd.Wait()
-	exitErr, ok := err.(*exec.ExitError)
-	if err != nil && !(ok && exitErr.ExitCode() == -1) {
-		log.Fatal("process errored", "error", err)
-	}
 }
 
 type pipeline struct {
@@ -67,13 +62,12 @@ func main() {
 	go handleNodeErrors(cancel, sourceErrors, processorErrors, sinkErrors)
 
 	wg.Wait()
-	defer func() {
-		close(sourceErrors)
-		close(processorErrors)
-		close(sinkErrors)
-
-		for _, cmd := range cmds {
-			handleCmd(cmd)
+	log.Info("cleaning up")
+	for _, cmd := range cmds {
+		err := cmd.Wait()
+		exitErr, ok := err.(*exec.ExitError)
+		if err != nil && !(ok && exitErr.ExitCode() == -1) {
+			log.Fatal("process errored", "error", err)
 		}
-	}()
+	}
 }
