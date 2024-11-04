@@ -8,7 +8,7 @@ def filter(media):
         return True
 
     tags = media['extraMetadata']['tags']
-    return has(config['included'], tags) and not has(config['excluded'], tags)
+    return all([tag in tags for tag in config['included']]) and not any([tag in tags for tag in config['excluded']])
 
 def handle_filter(params):
     return [filter(media) for media in params]
