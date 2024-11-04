@@ -77,9 +77,9 @@ func runProcessors(wg *sync.WaitGroup, cmds []*exec.Cmd, input <-chan []media.Me
 
 	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		defer close(output)
 		defer close(errors)
-		defer wg.Done()
 		defer log.Info("processors finished")
 
 		MEDIA: for media := range input {
