@@ -59,7 +59,7 @@ func runSources(wg *sync.WaitGroup, cmds []*exec.Cmd, ctx context.Context) (<-ch
 
 		sourceWg.Add(1)
 		go func() {
-			defer wg.Done()
+			defer sourceWg.Done()
 
 			err := runSource(output, source, ctx)
 			if err != nil {
