@@ -59,5 +59,7 @@ Pane {
         id: mouseArea
         anchors.fill: parent
         hoverEnabled: focusEnabled
+        acceptedButtons: Qt.RightButton
+        onClicked: event => (contextMenu.current = media) && contextMenu.popup();
     }
 }

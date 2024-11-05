@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"os/exec"
-	"strings"
+	"runtime"
 	"sync"
 	"time"
 
@@ -13,8 +13,17 @@ import (
 )
 
 func createCmd(name string) *exec.Cmd {
-	command := strings.Split(config.Config.Nodes[name].Command, " ")
-	return exec.Command(command[0], command[1:]...)
+	var shell string
+	var flag string
+	if runtime.GOOS == "windows" {
+		shell = "cmd"
+		flag = "/c"
+	} else {
+		shell = "sh"
+		flag = "-c"
+	}
+
+	return exec.Command(shell, flag, config.Config.Nodes[name].Command)
 }
 
 func handleCmd(cmd *exec.Cmd) {

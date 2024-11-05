@@ -37,8 +37,7 @@ pub mod qobject {
 
 use std::{pin::Pin, sync::mpsc::channel, thread};
 
-use cxx_qt_lib::{QMap, QMapPair_QString_QVariant};
-use qobject::{QString, QUrl};
+use qobject::{QMap_QString_QVariant, QString, QUrl};
 use cxx_qt::Threading;
 
 use crate::{media::TypeMetadata, server::listen};
@@ -60,7 +59,7 @@ impl cxx_qt::Initialize for qobject::MediaList {
         thread::spawn(move || listen(tx));
         thread::spawn(move || {
             while let Ok(media) = rx.recv() {
-                let mut value: QMap<QMapPair_QString_QVariant> = QMap::default();
+                let mut value: QMap_QString_QVariant = QMap_QString_QVariant::default();
 
                 value.insert("url".into(), (&QUrl::from(&media.url)).into());
                 value.insert("title".into(), (&QString::from(&media.essential_metadata.title)).into());
