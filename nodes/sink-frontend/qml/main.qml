@@ -13,6 +13,10 @@ ApplicationWindow {
         id: model
     }
 
+    ActionsContextMenu {
+        id: contextMenu
+    }
+
     CustomScrollGridView {
         property int spacing: 4
 
