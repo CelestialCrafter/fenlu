@@ -60,13 +60,26 @@ impl cxx_qt::Initialize for qobject::MediaList {
         thread::spawn(move || {
             while let Ok(media) = rx.recv() {
                 let mut value: QMap_QString_QVariant = QMap_QString_QVariant::default();
+                let conv = |v: String| (&QString::from(&v)).into();
 
-                value.insert("url".into(), (&QUrl::from(&media.url)).into());
-                value.insert("title".into(), (&QString::from(&media.essential_metadata.title)).into());
-                value.insert("type".into(), (&QString::from(&media.type_metadata.to_string())).into());
-                if let TypeMetadata::Image { width, height } = media.type_metadata {
-                    value.insert("width".into(), (&width).into());
-                    value.insert("height".into(), (&height).into());
+                value.insert("url".into(), conv(media.url));
+                value.insert("type".into(), conv(media.type_metadata.to_string()));
+                value.insert("title".into(), conv(media.essential_metadata.title));
+                value.insert("creation".into(), (&media.essential_metadata.creation).into());
+
+                match media.type_metadata {
+                    TypeMetadata::Image { width, height } => {
+                        value.insert("width".into(), (&width).into());
+                        value.insert("height".into(), (&height).into());
+                    },
+                    TypeMetadata::PDF { author, summary } => {
+                        value.insert("width".into(), conv(author));
+                        value.insert("height".into(), conv(summary));
+                    }
+                };
+
+                if let Some(extra) = media.extra_metadata {
+                    extra.into_iter().for_each(|(k, v)|  value.insert(k.into(), conv(v.to_string())));
                 }
 
                 qthread.queue(move |mut media_list| media_list.as_mut().recv_new(value)).expect("could not queue update");

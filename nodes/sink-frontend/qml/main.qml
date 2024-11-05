@@ -17,6 +17,10 @@ ApplicationWindow {
         id: contextMenu
     }
 
+    MediaDetails {
+        id: mediaDetails
+    }
+
     CustomScrollGridView {
         property int spacing: 4
 
