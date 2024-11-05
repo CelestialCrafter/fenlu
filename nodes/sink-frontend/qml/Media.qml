@@ -52,7 +52,6 @@ Pane {
         }
 
         Text {
-            Layout.fillHeight: true
             Layout.fillWidth: true
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter

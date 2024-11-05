@@ -24,7 +24,10 @@ ApplicationWindow {
     CustomScrollGridView {
         property int spacing: 4
 
-        anchors.fill: parent
+        height: parent.height
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: Math.floor(parent.width / cellWidth) * cellWidth
+
         id: grid
         activeFocusOnTab: true
         focus: true
