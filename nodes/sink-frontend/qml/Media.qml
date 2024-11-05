@@ -8,12 +8,21 @@ Pane {
     required property var media
     property bool focusEnabled: true
     property bool focused: false
+    property bool mipmap: true
 
+    id: pane
     padding: 10
     background: MediaBackground {
         focused: mouseArea.containsMouse || parent.focused
         minor: !focused || mouseArea.containsMouse
     }
+
+    function openDetails() {
+        mediaDetails.current = media;
+        mediaDetails.open();
+    }
+
+    Keys.onReturnPressed: openDetails()
 
     ColumnLayout {
         anchors.fill: parent
@@ -26,7 +35,7 @@ Pane {
 
             asynchronous: true
             cache: false
-            mipmap: true
+            mipmap: pane.mipmap
             source: media.url
             fillMode: Image.PreserveAspectFit
             sourceSize: media.type === "image" ? Qt.size(media.width, media.height) : null
@@ -59,7 +68,17 @@ Pane {
         id: mouseArea
         anchors.fill: parent
         hoverEnabled: focusEnabled
-        acceptedButtons: Qt.RightButton
-        onClicked: event => (contextMenu.current = media) && contextMenu.popup();
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onClicked: event => {
+            switch (event.button) {
+                case Qt.LeftButton:
+                openDetails();
+                break;
+                case Qt.RightButton:
+                contextMenu.current = media;
+                contextMenu.popup();
+                break;
+            }
+        }
     }
 }
