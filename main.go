@@ -26,9 +26,6 @@ func createCmd(name string) *exec.Cmd {
 	return exec.Command(shell, flag, config.Config.Nodes[name].Command)
 }
 
-func handleCmd(cmd *exec.Cmd) {
-}
-
 type pipeline struct {
 	Sources []node.Source
 	Sinks []node.Sink
