@@ -48,7 +48,7 @@ def handle_initialize(params):
         files = [os.path.join(dir, file) for file in os.listdir(dir)]
 
     return {
-        'version': "95a247050de65c132541eabe3d93ca0b7c9b5a65",
+        'version': "57969bae27de229c075fcba919924838f61ef2ff",
         'capabilities':  ["media/source"]
     }
 
