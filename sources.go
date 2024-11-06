@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"sync"
 
-	"github.com/CelestialCrafter/fenlu/config"
+	"github.com/CelestialCrafter/fenlu/common"
 	"github.com/CelestialCrafter/fenlu/media"
 	"github.com/CelestialCrafter/fenlu/node"
 	"github.com/CelestialCrafter/fenlu/protocol"
@@ -36,8 +36,8 @@ func runSource(output chan<- []media.Media, source node.Source, ctx context.Cont
 }
 
 func runSources(wg *sync.WaitGroup, cmds []*exec.Cmd, ctx context.Context) (<-chan []media.Media, <-chan error, error) {
-	sources := config.Config.Pipeline.Sources
-	bufferSize := config.Config.BufferSize * len(sources)
+	sources := common.Config.Pipeline.Sources
+	bufferSize := common.Config.BufferSize * len(sources)
 
 	output := make(chan []media.Media, bufferSize)
 	errors := make(chan error)
