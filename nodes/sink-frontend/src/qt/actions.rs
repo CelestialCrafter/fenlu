@@ -28,6 +28,7 @@ pub mod qobject {
     impl cxx_qt::Constructor<()> for Actions {}
 }
 
+use core::time;
 use std::{pin::Pin, process::{Command, Stdio}, thread};
 
 use cxx_qt_lib::QVariantValue;
@@ -84,7 +85,7 @@ impl qobject::Actions {
 impl cxx_qt::Initialize for qobject::Actions {
     fn initialize(mut self: Pin<&mut Self>) {
         while let None = CONFIG.get() {
-            thread::yield_now();
+            thread::sleep(time::Duration::from_millis(50));
         }
 
         let mut actions = QMap_QString_QVariant::default();
