@@ -9,6 +9,8 @@
         packages = with pkgs; [
           qt6.full
           pkg-config
+          socat
+          sqlite
 
           go
 
