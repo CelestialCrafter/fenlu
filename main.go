@@ -35,7 +35,7 @@ func handleNodeErrors(cancel context.CancelFunc, errorChannels ...<-chan error) 
 	for _, channel := range errorChannels {
 		go func() {
 			for err := range channel {
-				log.Error("node errored; flushing pipeline", "error", err)
+				log.Error("node errored; stopping pipeline", "error", err)
 				cancel()
 			}
 		}()
@@ -61,9 +61,9 @@ func main() {
 		log.Fatal("could not initialize sources", "error", err)
 	}
 
-	processorMedia, processorErrors, err := runProcessors(&wg, cmds, sourceMedia)
+	processorMedia, processorErrors, err := runProcessors(&wg, cmds, ctx, sourceMedia)
 
-	sinkErrors, err := runSinks(&wg, cmds, processorMedia)
+	sinkErrors, err := runSinks(&wg, cmds, ctx, processorMedia)
 	if err != nil {
 		log.Fatal("could not initialize sinks", "error", err)
 	}
