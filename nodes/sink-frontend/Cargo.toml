@@ -13,3 +13,6 @@ cxx-qt-lib = { version = "0.7.0", features = ["qt_full"] }
 
 [build-dependencies]
 cxx-qt-build = { version = "0.7", features = [ "link_qt_object_files" ] }
+
+[profile.release]
+debug = true
