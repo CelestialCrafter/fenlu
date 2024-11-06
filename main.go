@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"os/exec"
 	"runtime"
 	"sync"
@@ -43,6 +44,7 @@ func handleNodeErrors(cancel context.CancelFunc, errorChannels ...<-chan error) 
 }
 
 func main() {
+	flag.Parse()
 	err := common.LoadConfig()
 	if err != nil {
 		log.Fatal("could not load config", "error", err)

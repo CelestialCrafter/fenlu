@@ -1,6 +1,7 @@
 package common
 
 import (
+	"flag"
 	"reflect"
 
 	"github.com/BurntSushi/toml"
@@ -45,10 +46,10 @@ var Default = config {
 	LogLevel: logLevel{Level: log.InfoLevel},
 }
 
-const configPath = "config.toml"
+var configPath = flag.String("config", "config.toml", "configuration file")
 
 func LoadConfig() error {
-	_, err := toml.DecodeFile(configPath, &Config)
+	_, err := toml.DecodeFile(*configPath, &Config)
 	if err != nil {
 		return err
 	}
