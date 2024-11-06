@@ -29,7 +29,7 @@ impl Response {
 
 pub const INITIALIZE_METHOD: &str = "initialize/initialize";
 pub const SINK_METHOD: &str = "media/sink";
-pub const VERSION: &str = "95a247050de65c132541eabe3d93ca0b7c9b5a65";
+pub const VERSION: &str = "667430e325dda8b8949276d39b87c031a304c55b";
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct InitializeParams {
