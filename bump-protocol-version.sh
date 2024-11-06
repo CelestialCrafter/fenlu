@@ -7,8 +7,8 @@ fi
 PREV=$(grep "const Version" protocol/version.go | sed 's/.*"\(\w*\)"/\1/')
 NEXT=$(git rev-parse HEAD)
 
-FILES=$(fd -e py -e go -t f)
+FILES=$(fd -e py -e go -e rs -t f)
 echo $FILES | xargs sed -i "s/$PREV/$NEXT/"
-echo $FILES | xargs git add
 git diff
+echo $FILES | xargs git add
 git commit -em "bump protocol version"
