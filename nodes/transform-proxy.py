@@ -16,7 +16,7 @@ def transform(media):
         url = url._replace(netloc=target['authority'], path=target['path'] + url.path)
 
         # "urlunparse".. really?
-        media['extraMetadata']['originalUrl'] = media['url']
+        media['extraMetadata']['proxyOriginalUrl'] = media['url']
         media['url'] = urlunparse(url)
 
         break
