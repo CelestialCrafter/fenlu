@@ -51,15 +51,12 @@ func runProcessors(wg *sync.WaitGroup, cmds []*exec.Cmd, ctx context.Context, in
 	errors := make(chan error)
 
 	for i, name := range processors {
-		cmd := createCmd(name)
-		cmds = append(cmds, cmd)
-
-		n, err := node.InitializeNode(cmd, name)
+		n, err := node.InitializeNode(name, cmds)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		capabilities := n.Capabilities()
+		capabilities := n.Capabilities
 
 		var nodeType string
 		if _, ok := capabilities[protocol.TransformMethod]; ok {

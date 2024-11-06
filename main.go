@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"os/exec"
-	"runtime"
 	"sync"
 	"time"
 
@@ -12,20 +11,6 @@ import (
 	"github.com/CelestialCrafter/fenlu/node"
 	"github.com/charmbracelet/log"
 )
-
-func createCmd(name string) *exec.Cmd {
-	var shell string
-	var flag string
-	if runtime.GOOS == "windows" {
-		shell = "cmd"
-		flag = "/c"
-	} else {
-		shell = "sh"
-		flag = "-c"
-	}
-
-	return exec.Command(shell, flag, common.Config.Nodes[name].Command)
-}
 
 type pipeline struct {
 	Sources []node.Source
