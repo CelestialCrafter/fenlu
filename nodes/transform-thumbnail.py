@@ -23,6 +23,7 @@ def transform(media):
         image.thumbnail((config['size'], height))
         image.save(path)
 
+        media['extraMetadata']['thumbnailOriginalUrl'] = media['url']
         media['url'] = 'file:///' + path.lstrip('/')
         media['typeMetadata']['width'] = config['size']
         media['typeMetadata']['height'] = height
