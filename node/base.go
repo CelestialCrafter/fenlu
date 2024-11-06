@@ -9,7 +9,7 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/CelestialCrafter/fenlu/config"
+	"github.com/CelestialCrafter/fenlu/common"
 	"github.com/CelestialCrafter/fenlu/protocol"
 	"github.com/charmbracelet/log"
 	"github.com/go-viper/mapstructure/v2"
@@ -95,8 +95,8 @@ func InitializeNode(cmd *exec.Cmd, name string) (*Node, error) {
 
 	// initialization
 	request := protocol.NewRequest(protocol.InitializeMethod, protocol.InitializeParams{
-		BatchSize: config.Config.BatchSize,
-		Config: config.Config.Nodes[name].Config,
+		BatchSize: common.Config.BatchSize,
+		Config: common.Config.Nodes[name].Config,
 	})
 
 	result := new(protocol.InitializeResult)

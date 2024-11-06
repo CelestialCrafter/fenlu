@@ -8,7 +8,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/CelestialCrafter/fenlu/config"
+	"github.com/CelestialCrafter/fenlu/common"
 	"github.com/CelestialCrafter/fenlu/media"
 	"github.com/CelestialCrafter/fenlu/node"
 	"github.com/CelestialCrafter/fenlu/protocol"
@@ -43,8 +43,8 @@ func process(wrapper nodeWrapper, input []media.Media) ([]media.Media, error) {
 }
 
 func runProcessors(wg *sync.WaitGroup, cmds []*exec.Cmd, ctx context.Context, input <-chan []media.Media) (<-chan []media.Media, <-chan error, error) {
-	processors := config.Config.Pipeline.Processors
-	bufferSize := config.Config.BufferSize * len(processors)
+	processors := common.Config.Pipeline.Processors
+	bufferSize := common.Config.BufferSize * len(processors)
 
 	nodes := make([]nodeWrapper, len(processors))
 	output := make(chan []media.Media, bufferSize)

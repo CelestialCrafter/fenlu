@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/CelestialCrafter/fenlu/config"
+	"github.com/CelestialCrafter/fenlu/common"
 	"github.com/CelestialCrafter/fenlu/node"
 	"github.com/charmbracelet/log"
 )
@@ -23,7 +23,7 @@ func createCmd(name string) *exec.Cmd {
 		flag = "-c"
 	}
 
-	return exec.Command(shell, flag, config.Config.Nodes[name].Command)
+	return exec.Command(shell, flag, common.Config.Nodes[name].Command)
 }
 
 type pipeline struct {
@@ -43,15 +43,16 @@ func handleNodeErrors(cancel context.CancelFunc, errorChannels ...<-chan error) 
 }
 
 func main() {
-	err := config.LoadConfig()
+	err := common.LoadConfig()
 	if err != nil {
 		log.Fatal("could not load config", "error", err)
 	}
-	config.SetupLogger()
+	common.SetupLogger()
 
 	wg := sync.WaitGroup{}
-	totalNodes := len(config.Config.Pipeline.Sources) + len(config.Config.Pipeline.Sinks) + len(config.Config.Pipeline.Processors)
+	totalNodes := len(common.Config.Pipeline.Sources) + len(common.Config.Pipeline.Sinks) + len(common.Config.Pipeline.Processors)
 	cmds := make([]*exec.Cmd, 0, totalNodes)
+
 	ctx, cancel := context.WithCancel(context.Background())
 
 	start := time.Now()
