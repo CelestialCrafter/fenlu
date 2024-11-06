@@ -1,8 +1,10 @@
+import json
+
 from common import listen, log
 
 def handle_sink(params):
     for media in params:
-        log(media)
+        log(json.dumps(media))
 
 def handle_initialize(_):
     return {
