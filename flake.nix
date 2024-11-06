@@ -21,6 +21,7 @@
             python-pkgs.python
             python-pkgs.pillow
             python-pkgs.requests
+            python-pkgs.pykakasi
           ]))
         ];
       };
