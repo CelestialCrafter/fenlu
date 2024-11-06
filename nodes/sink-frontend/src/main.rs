@@ -6,6 +6,8 @@ pub mod initialize;
 pub mod config;
 pub mod sink;
 
+use std::io::{self, Read};
+
 use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QUrl};
 
 fn main() {
@@ -19,4 +21,6 @@ fn main() {
     if let Some(app) = app.as_mut() {
         app.exec();
     }
+
+    let _ = io::stdin().read_to_end(&mut vec![]).expect("could not read to end of stdin");
 }
