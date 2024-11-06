@@ -1,14 +1,14 @@
 from common import listen
 
-def has(a, b):
-    return any([tag in a for tag in b])
+def has(fn, a, b):
+    return fn([tag in a for tag in b])
 
 def filter(media):
     if media['extraMetadata'] is None or 'tags' not in media['extraMetadata']:
         return True
 
     tags = media['extraMetadata']['tags']
-    return all([tag in tags for tag in config['included']]) and not any([tag in tags for tag in config['excluded']])
+    return has(all, tags, config['included_and']) and has(any, tags, config['included_or']) and not has(any, tags, config['excluded'])
 
 def handle_filter(params):
     return [filter(media) for media in params]
