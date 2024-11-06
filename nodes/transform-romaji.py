@@ -19,7 +19,7 @@ def handle_initialize(_):
     kks = pykakasi.kakasi()
 
     return {
-        'version': "57969bae27de229c075fcba919924838f61ef2ff",
+        'version': "667430e325dda8b8949276d39b87c031a304c55b",
         'capabilities':  ["media/transform"]
     }
 
