@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"sync"
@@ -12,7 +13,7 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-func runSinks(wg *sync.WaitGroup, cmds []*exec.Cmd, input <-chan []media.Media) (<-chan error, error) {
+func runSinks(wg *sync.WaitGroup, cmds []*exec.Cmd, ctx context.Context, input <-chan []media.Media) (<-chan error, error) {
 	sinks := make([]node.Sink, len(config.Config.Pipeline.Sinks))
 
 	sinkWg := sync.WaitGroup{}
@@ -42,6 +43,10 @@ func runSinks(wg *sync.WaitGroup, cmds []*exec.Cmd, input <-chan []media.Media) 
 		defer log.Info("sinks finished")
 
 		for media := range input {
+			if ctx.Err() != nil {
+				break
+			}
+
 			for _, sink := range sinks {
 				sinkWg.Add(1)
 				go func() {

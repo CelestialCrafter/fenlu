@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os/exec"
@@ -41,7 +42,7 @@ func process(wrapper nodeWrapper, input []media.Media) ([]media.Media, error) {
 	return nil, errors.New("unsupported method")
 }
 
-func runProcessors(wg *sync.WaitGroup, cmds []*exec.Cmd, input <-chan []media.Media) (<-chan []media.Media, <-chan error, error) {
+func runProcessors(wg *sync.WaitGroup, cmds []*exec.Cmd, ctx context.Context, input <-chan []media.Media) (<-chan []media.Media, <-chan error, error) {
 	processors := config.Config.Pipeline.Processors
 	bufferSize := config.Config.BufferSize * len(processors)
 
@@ -83,6 +84,10 @@ func runProcessors(wg *sync.WaitGroup, cmds []*exec.Cmd, input <-chan []media.Me
 		defer log.Info("processors finished")
 
 		MEDIA: for media := range input {
+			if ctx.Err() != nil {
+				break
+			}
+
 			for _, wrapper := range nodes {
 				var err error
 				media, err = process(wrapper, media)
