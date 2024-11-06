@@ -1,29 +1,29 @@
 import os
-from urllib.parse import quote
 from PIL import Image, UnidentifiedImageError
 
-from common import listen, log
+from common import listen
 
 def calculate_height(cw, ch, nw):
     ar = cw / ch
     return int(nw / ar)
 
 def transform(media):
+    path = os.path.join(config['directory'], os.path.basename(media['url']))
+    if os.path.exists(path):
+        media['url'] = 'file:///' + path.lstrip('/')
+        return media
+
     if (not media['url'].startswith('file://')) or media['type'] != 'image':
         return media
 
     try:
-        path = os.path.join(config['directory'], quote(media['essentialMetadata']['title']))
-        if os.path.exists(path):
-            return media
-
         height = calculate_height(media['typeMetadata']['width'], media['typeMetadata']['height'], config['size'])
 
         image = Image.open(media["url"].replace('file://', ''))
         image.thumbnail((config['size'], height))
         image.save(path)
 
-        media['url'] = 'file:///' + quote(path.lstrip('/'), safe=':/')
+        media['url'] = 'file:///' + path.lstrip('/')
         media['typeMetadata']['width'] = config['size']
         media['typeMetadata']['height'] = height
     except (UnidentifiedImageError, OSError):
