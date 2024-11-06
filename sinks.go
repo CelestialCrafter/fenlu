@@ -20,14 +20,11 @@ func runSinks(wg *sync.WaitGroup, cmds []*exec.Cmd, ctx context.Context, input <
 	errors := make(chan error)
 
 	for i, name := range common.Config.Pipeline.Sinks {
-		cmd :=  createCmd(name)
-		cmds = append(cmds, cmd)
-
-		n, err := node.InitializeNode(cmd, name)
+		n, err := node.InitializeNode(name, cmds)
 		if err != nil {
 			return nil, err
 		}
-		_, ok := n.Capabilities()[protocol.SinkMethod]
+		_, ok := n.Capabilities[protocol.SinkMethod]
 		if !ok {
 			panic(fmt.Sprintln(protocol.SinkMethod, " unsupported on node: ", name))
 		}
@@ -35,7 +32,6 @@ func runSinks(wg *sync.WaitGroup, cmds []*exec.Cmd, ctx context.Context, input <
 
 	}
 
-	// why is the whitespace fucking exponential
 	wg.Add(1)
 	go func() {
 		defer close(errors)

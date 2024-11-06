@@ -44,14 +44,11 @@ func runSources(wg *sync.WaitGroup, cmds []*exec.Cmd, ctx context.Context) (<-ch
 	sourceWg := sync.WaitGroup{}
 
 	for _, name := range sources {
-		cmd := createCmd(name)
-		cmds = append(cmds, cmd)
-
-		n, err := node.InitializeNode(cmd, name)
+		n, err := node.InitializeNode(name, cmds)
 		if err != nil {
 			return nil, nil, err
 		}
-		_, ok := n.Capabilities()[protocol.SourceMethod]
+		_, ok := n.Capabilities[protocol.SourceMethod]
 		if !ok {
 			panic(fmt.Sprintln(protocol.SourceMethod, " unsupported on node: ", name))
 		}
