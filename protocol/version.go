@@ -1,4 +1,4 @@
 package protocol
 
-const Version = "95a247050de65c132541eabe3d93ca0b7c9b5a65"
+const Version = "57969bae27de229c075fcba919924838f61ef2ff"
 

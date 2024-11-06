@@ -25,7 +25,7 @@ def handle_initialize(params):
     cursor.execute('CREATE TABLE IF NOT EXISTS media (url TEXT PRIMARY KEY, data TEXT NOT NULL)')
 
     return {
-        'version': "95a247050de65c132541eabe3d93ca0b7c9b5a65",
+        'version': "57969bae27de229c075fcba919924838f61ef2ff",
         'capabilities':  ["media/source"]
     }
 
