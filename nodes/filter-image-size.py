@@ -1,4 +1,4 @@
-from common import listen
+from common import listen, validate_config
 
 def apply_op(lhs, rhs, op):
     default = True
@@ -18,8 +18,6 @@ def apply_op(lhs, rhs, op):
     return ops.get(op, lambda x, y: default)(lhs, rhs)
 
 def handle_filter(params):
-    global config
-
     return [
         all(
             apply_op(
@@ -27,14 +25,14 @@ def handle_filter(params):
                 condition['rhs'],
                 condition['op']
             )
-            for condition in config['conditions']
+            for condition in conditions
         ) if media['type'] == 'image' else True
         for media in params
     ]
 
 def handle_initialize(params):
-    global config
-    config = params['config']
+    global conditions
+    conditions, = validate_config(['conditions'], params, defaults={'conditions': []})
 
     return {
         'version': "667430e325dda8b8949276d39b87c031a304c55b",

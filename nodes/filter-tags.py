@@ -1,4 +1,4 @@
-from common import listen
+from common import listen, validate_config
 
 def has(fn, a, b):
     return fn([tag in a for tag in b])
@@ -9,14 +9,18 @@ def filter(media):
     except (TypeError, KeyError):
         return True
 
-    return has(all, tags, config['included_and']) and (len(config['included_or']) < 1 or has(any, tags, config['included_or'])) and not has(any, tags, config['excluded'])
+    return has(all, tags, incand) and (len(incor) < 1 or has(any, tags, incor)) and not has(any, tags, exc)
 
 def handle_filter(params):
     return [filter(media) for media in params]
 
 def handle_initialize(params):
-    global config
-    config = params['config']
+    global incand, incor, exc
+    incand, incor, exc = validate_config(
+        ['included_and', 'included_or', 'excluded'],
+        params,
+        defaults={'included_and': [], 'included_or': [], 'excluded': []}
+    )
 
     return {
         'version': "667430e325dda8b8949276d39b87c031a304c55b",

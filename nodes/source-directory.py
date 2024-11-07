@@ -2,7 +2,7 @@ import os
 from urllib.parse import quote
 from PIL import Image, UnidentifiedImageError
 
-from common import listen
+from common import listen, validate_config
 
 def handle_source(params):
     global files
@@ -36,16 +36,16 @@ def handle_source(params):
 
 def handle_initialize(params):
     global batch_size
-    global config
     global files
 
-    config = params['config']
     batch_size = params['batchSize']
-    dir = os.path.expanduser(config['path'])
-    if config['walk']:
-        files = [os.path.join(root, file) for root, _, files in os.walk(dir) for file in files]
+    walk, directory = validate_config(['walk', 'directory'], params, defaults={'walk': True})
+
+    directory = os.path.expanduser(directory)
+    if walk:
+        files = [os.path.join(root, file) for root, _, files in os.walk(directory) for file in files]
     else:
-        files = [os.path.join(dir, file) for file in os.listdir(dir)]
+        files = [os.path.join(directory, file) for file in os.listdir(directory)]
 
     return {
         'version': "667430e325dda8b8949276d39b87c031a304c55b",

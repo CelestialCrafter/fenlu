@@ -1,7 +1,7 @@
 import sqlite3
 import json
 
-from common import listen
+from common import listen, validate_config
 
 def handle_sink(params):
     cursor.executemany('INSERT OR IGNORE INTO media VALUES(?, ?)', [
@@ -13,7 +13,8 @@ def handle_initialize(params):
     global connection
     global cursor
 
-    connection = sqlite3.connect(params['config']['path'])
+    path, = validate_config(['path'], params)
+    connection = sqlite3.connect(path)
     cursor = connection.cursor()
     cursor.execute('CREATE TABLE IF NOT EXISTS media (url TEXT PRIMARY KEY, data TEXT NOT NULL)')
 
