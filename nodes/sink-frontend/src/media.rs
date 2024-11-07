@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt};
+use std::collections::HashMap;
 
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
@@ -33,15 +33,6 @@ impl Default for TypeMetadata {
         Self::Image {
             width: u64::default(),
             height: u64::default()
-        }
-    }
-}
-
-impl fmt::Display for TypeMetadata {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::Image { width: _, height: _ } => write!(f, "image"),
-            Self::PDF { author: _, summary: _ } => write!(f, "pdf")
         }
     }
 }

@@ -6,9 +6,16 @@ pub mod initialize;
 pub mod config;
 pub mod sink;
 
-use std::io::{self, Read};
+use std::{io::{self, Read}, thread, time};
 
+use config::CONFIG;
 use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QUrl};
+
+pub fn wait_for_config() {
+        while let None = CONFIG.get() {
+            thread::sleep(time::Duration::from_millis(50));
+        }
+}
 
 fn main() {
     let mut app = QGuiApplication::new();
