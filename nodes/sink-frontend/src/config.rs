@@ -22,7 +22,7 @@ pub struct Config {
 
 
 fn default_render_amount() -> usize {
-    50
+    200
 }
 
 fn default_thumbnail_size() -> usize {
