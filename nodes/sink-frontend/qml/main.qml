@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 import QtQuick.Window
 import sinkfrontend
 
@@ -21,54 +22,72 @@ ApplicationWindow {
         id: mediaDetails
     }
 
-    SpinBox {
-        id: offset
-        stepSize: MediaList.render_amount
-        to: 0
-        onValueModified: {
-            MediaList.offset = value;
-            MediaList.rerender();
+    Pane {
+        padding: 10
+        anchors.fill: parent
+
+        RowLayout {
+            anchors.fill: parent
+            spacing: 8
+
+            Item {
+                Layout.fillWidth: true
+                Layout.maximumWidth: parent.width * 0.2
+                Layout.fillHeight: true
+
+                SpinBox {
+                    id: offset
+                    width: parent.width
+                    stepSize: MediaList.render_amount
+                    to: 0
+                    onValueModified: {
+                        MediaList.offset = value;
+                        MediaList.rerender();
+                    }
+                }    
+
+                Button {
+                    id: total
+                    down: false
+                    anchors.topMargin: 4
+                    anchors.top: offset.bottom
+                    anchors.horizontalCenter: offset.horizontalCenter
+                    text: "0"
+                }
+            }
+
+            CustomScrollGridView {
+                property int spacing: 4
+
+                Layout.fillHeight: true
+                Layout.preferredWidth: Math.floor(parent.width / cellWidth) * cellWidth
+                Layout.alignment: Qt.AlignRight
+
+                id: grid
+                activeFocusOnTab: true
+                focus: true
+                clip: true
+                cellWidth: MediaList.thumbnail_size
+                cellHeight: cellWidth
+                model: model
+
+                delegate: Media {
+                    width: grid.cellWidth - grid.spacing
+                    height: grid.cellHeight - grid.spacing
+                    focused: GridView.isCurrentItem
+                }
+
+                highlight: Item {}
+            }
         }
-    }
-
-    Text {
-        id: total
-        anchors.top: offset.bottom
-        anchors.horizontalCenter: offset.horizontalCenter
-        text: "0"
-    }
-
-    CustomScrollGridView {
-        property int spacing: 4
-
-        height: parent.height
-        anchors.horizontalCenter: parent.horizontalCenter
-        width: Math.floor(parent.width / cellWidth) * cellWidth
-
-        id: grid
-        activeFocusOnTab: true
-        focus: true
-        clip: true
-        cellWidth: 296
-        cellHeight: cellWidth
-        cacheBuffer: cellHeight
-        model: model
-
-        delegate: Media {
-            width: grid.cellWidth - grid.spacing
-            height: grid.cellHeight - grid.spacing
-            focused: GridView.isCurrentItem
-        }
-
-        highlight: Item {}
     }
 
     Connections {
-	target: MediaList
+        target: MediaList
 
-	function onAppend(media) {
-	    model.append({ media });
-	}
+        function onAppend(media) {
+            model.append({ media });
+        }
 
         function onTotalChanged() {
             total.text = MediaList.total.toString();
