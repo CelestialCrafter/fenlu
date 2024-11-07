@@ -21,6 +21,7 @@ pub mod qobject {
         #[qproperty(usize, offset)]
         #[qproperty(usize, total)]
         #[qproperty(usize, render_amount)]
+        #[qproperty(usize, thumbnail_size)]
         type MediaList = super::MediaListRust;
 
         #[qsignal]
@@ -49,7 +50,8 @@ pub struct MediaListRust {
     media: RwLock<Vec<QMap_QString_QVariant>>,
     offset: usize,
     total: usize,
-    render_amount: usize
+    render_amount: usize,
+    thumbnail_size: usize
 }
 
 impl qobject::MediaList {
@@ -77,6 +79,7 @@ impl cxx_qt::Initialize for qobject::MediaList {
 
         wait_for_config();
         self.as_mut().set_render_amount(CONFIG.get().unwrap().render_amount);
+        self.as_mut().set_thumbnail_size(CONFIG.get().unwrap().thumbnail_size);
 
         thread::spawn(move || {
 
