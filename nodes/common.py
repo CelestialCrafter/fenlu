@@ -33,6 +33,7 @@ def set_em_key(media, key, value):
     if 'extraMetadata' not in media or media['extraMetadata'] is None:
         media['extraMetadata'] = {}
     media['extraMetadata'][key] = value
+
     return media
 
 def validate_config(paths, params, defaults={}):
