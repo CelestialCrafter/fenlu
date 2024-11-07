@@ -1,6 +1,6 @@
 import json
 
-from common import listen
+from common import listen, validate_config
 
 def handle_sink(params):
     for media in params:
@@ -8,7 +8,8 @@ def handle_sink(params):
 
 def handle_initialize(params):
     global file
-    file = open(params['config']['path'], 'w+')
+    path, = validate_config(['path'], params)
+    file = open(path, 'w+')
 
     return {
         'version': "667430e325dda8b8949276d39b87c031a304c55b",

@@ -4,7 +4,7 @@ import requests
 from itertools import chain
 from datetime import datetime
 
-from common import listen
+from common import listen, validate_config
 
 def transform(post):
     dateSegment = re.sub(
@@ -32,20 +32,16 @@ def transform(post):
     } for page in range(post['pageCount'])]
 
 def handle_source(params):
-    time.sleep(config['request_delay'])
+    time.sleep(request_delay)
 
     max = 100
     state = params['state']
 
-    if config['nsfw']:
-        nsfw = 'hide'
-    else:
-        nsfw = 'show'
 
-    url = f'https://www.pixiv.net/ajax/user/{config['id']}/illusts/bookmarks?tag=&offset={max * state}&limit={max}&rest={nsfw}&lang=en'
+    url = f'https://www.pixiv.net/ajax/user/{id}/illusts/bookmarks?tag=&offset={max * state}&limit={max}&rest={nsfw}&lang=en'
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:131.0) Gecko/20100101 Firefox/131.0',
-        'Cookie': f'PHPSESSID={config['id']}_{config['token']}',
+        'Cookie': f'PHPSESSID={id}_{token}',
     }
 
     data = requests.get(url, headers=headers).json()
@@ -59,8 +55,16 @@ def handle_source(params):
     return {'media': media, 'finished': len(data['body']['works']) < max}
 
 def handle_initialize(params):
-    global config
-    config = params['config']
+    global nsfw, request_delay, id, token
+    nsfw_bool, request_delay, id, token = validate_config(
+        ['nsfw', 'request_delay', 'account.id', 'account.token'],
+        params,
+        defaults={'request_delay': 2, 'nsfw': False}
+    )
+    if nsfw_bool:
+        nsfw = 'hide'
+    else:
+        nsfw = 'show'
 
     return {
         'version': "667430e325dda8b8949276d39b87c031a304c55b",

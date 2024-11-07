@@ -1,6 +1,6 @@
 import json
 import sqlite3
-from common import listen
+from common import listen, validate_config
 
 def handle_source(params):
     global cursor
@@ -20,7 +20,9 @@ def handle_initialize(params):
     global cursor
 
     batch_size = params['batchSize']
-    connection = sqlite3.connect(params['config']['path'])
+    
+    path, = validate_config(['path'], params)
+    connection = sqlite3.connect(path)
     cursor = connection.cursor()
     cursor.execute('CREATE TABLE IF NOT EXISTS media (url TEXT PRIMARY KEY, data TEXT NOT NULL)')
 

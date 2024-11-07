@@ -12,10 +12,17 @@ pub struct Action {
 
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct Config {
+    #[serde(default)]
     pub actions: Vec<Action>,
+    #[serde(default = "default_render_amount")]
     pub render_amount: usize,
     #[serde(default = "default_thumbnail_size")]
     pub thumbnail_size: usize
+}
+
+
+fn default_render_amount() -> usize {
+    50
 }
 
 fn default_thumbnail_size() -> usize {
