@@ -24,17 +24,14 @@ pub mod qobject {
         #[qinvokable]
         fn execute(self: Pin<&mut Actions>, media: QMap_QString_QVariant, action: QString);
     }
-
-    impl cxx_qt::Constructor<()> for Actions {}
 }
 
-use core::time;
-use std::{pin::Pin, process::{Command, Stdio}, thread};
+use std::{pin::Pin, process::{Command, Stdio}};
 
 use cxx_qt_lib::QVariantValue;
 use qobject::{QMap_QString_QVariant, QString, QUrl, QVariant};
 
-use crate::{config::CONFIG, media::{self}};
+use crate::{config::CONFIG, media::{self}, wait_for_config};
 
 #[derive(Default)]
 pub struct ActionsRust {
@@ -84,10 +81,7 @@ impl qobject::Actions {
 
 impl cxx_qt::Initialize for qobject::Actions {
     fn initialize(mut self: Pin<&mut Self>) {
-        while let None = CONFIG.get() {
-            thread::sleep(time::Duration::from_millis(50));
-        }
-
+        wait_for_config();
         let mut actions = QMap_QString_QVariant::default();
 
         CONFIG

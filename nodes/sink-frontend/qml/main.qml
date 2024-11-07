@@ -21,6 +21,23 @@ ApplicationWindow {
         id: mediaDetails
     }
 
+    SpinBox {
+        id: offset
+        stepSize: MediaList.render_amount
+        to: 0
+        onValueModified: {
+            MediaList.offset = value;
+            MediaList.rerender();
+        }
+    }
+
+    Text {
+        id: total
+        anchors.top: offset.bottom
+        anchors.horizontalCenter: offset.horizontalCenter
+        text: "0"
+    }
+
     CustomScrollGridView {
         property int spacing: 4
 
@@ -49,8 +66,17 @@ ApplicationWindow {
     Connections {
 	target: MediaList
 
-	function onRecvNew(media) {
-	    model.append({ media })
+	function onAppend(media) {
+	    model.append({ media });
 	}
+
+        function onTotalChanged() {
+            total.text = MediaList.total.toString();
+            offset.to = Math.floor(MediaList.total / MediaList.render_amount) * MediaList.render_amount;
+        }
+
+        function onClear() {
+            model.clear();
+        }
     }
 }

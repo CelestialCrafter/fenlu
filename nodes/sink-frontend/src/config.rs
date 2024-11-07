@@ -12,5 +12,6 @@ pub struct Action {
 
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct Config {
-    pub actions: Vec<Action>
+    pub actions: Vec<Action>,
+    pub render_amount: usize
 }

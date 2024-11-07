@@ -5,7 +5,7 @@ use serde_json::Value;
 
 use crate::{initialize, media::Media, protocol, sink};
 
-fn get_result(method: &str, params: Value, tx: Sender<Media>) -> Result<Value> {
+fn get_result(method: &str, params: Value, tx: Sender<Vec<Media>>) -> Result<Value> {
     Ok(match method {
         protocol::INITIALIZE_METHOD => serde_json::to_value(initialize::handle_initialize(serde_json::from_value(params)?)?)?,
         protocol::SINK_METHOD => serde_json::to_value(sink::handle_sink(serde_json::from_value(params)?, tx)?)?,
@@ -13,7 +13,7 @@ fn get_result(method: &str, params: Value, tx: Sender<Media>) -> Result<Value> {
     })
 }
 
-pub fn listen(tx: Sender<Media>) {
+pub fn listen(tx: Sender<Vec<Media>>) {
     let mut stdout = io::stdout();
     let lines = io::stdin().lines();
 
