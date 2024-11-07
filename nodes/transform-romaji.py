@@ -9,6 +9,7 @@ def transform(media):
         return {key: value if key in ['url', 'type'] else transform(value) for key, value in media.items()}
     elif isinstance(media, list):
         return [transform(item) for item in media]
+
     return media
 
 def handle_transform(params):

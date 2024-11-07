@@ -37,7 +37,6 @@ def handle_source(params):
     max = 100
     state = params['state']
 
-
     url = f'https://www.pixiv.net/ajax/user/{id}/illusts/bookmarks?tag=&offset={max * state}&limit={max}&rest={nsfw}&lang=en'
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:131.0) Gecko/20100101 Firefox/131.0',
@@ -47,9 +46,10 @@ def handle_source(params):
     data = requests.get(url, headers=headers).json()
     if data['error']:
         raise Exception(data['message'])
+
     media = list(chain.from_iterable(map(transform, filter(
-            lambda post: post['illustType'] == 0 and post['updateDate'] != '1970-01-01T00:00:00+09:00',
-            data['body']['works']
+        lambda post: post['illustType'] == 0 and post['updateDate'] != '1970-01-01T00:00:00+09:00',
+        data['body']['works']
     ))))
 
     return {'media': media, 'finished': len(data['body']['works']) < max}
