@@ -42,7 +42,7 @@ def handle_initialize(params):
     directory, size = validate_config(['directory', 'size'], params, defaults={'size': 512})
 
     return {
-        'version': "667430e325dda8b8949276d39b87c031a304c55b",
+        'version': "b2a8d343480cbaf075c93fd47033db7a2f020773",
         'capabilities':  ["media/transform"]
     }
 
