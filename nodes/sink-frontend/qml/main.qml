@@ -25,6 +25,7 @@ ApplicationWindow {
     Pane {
         padding: 10
         anchors.fill: parent
+        focus: true
 
         RowLayout {
             anchors.fill: parent
@@ -43,6 +44,7 @@ ApplicationWindow {
                     onValueModified: {
                         MediaList.offset = value;
                         MediaList.rerender();
+                        grid.ScrollBar.vertical.position = 0;
                     }
                 }    
 
