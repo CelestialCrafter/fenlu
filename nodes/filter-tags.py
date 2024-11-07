@@ -9,7 +9,7 @@ def filter(media):
     except (TypeError, KeyError):
         return True
 
-    return has(all, tags, config['included_and']) and has(any, tags, config['included_or']) and not has(any, tags, config['excluded'])
+    return has(all, tags, config['included_and']) and (len(config['included_or']) < 1 or has(any, tags, config['included_or'])) and not has(any, tags, config['excluded'])
 
 def handle_filter(params):
     return [filter(media) for media in params]
