@@ -1,7 +1,7 @@
 import os
 from PIL import Image, UnidentifiedImageError
 
-from common import listen, validate_config
+from common import listen, validate_config, set_em_key
 
 def calculate_height(cw, ch, nw):
     ar = cw / ch
@@ -9,27 +9,26 @@ def calculate_height(cw, ch, nw):
 
 def transform(media):
     path = os.path.join(directory, os.path.basename(media['url']))
-    if os.path.exists(path):
-        media['url'] = 'file:///' + path.lstrip('/')
-        return media
+    exists = os.path.exists(path)
 
-    if (not media['url'].startswith('file://')) or media['type'] != 'image':
+    if not exists and (not media['url'].startswith('file://')) or media['type'] != 'image':
         return media
 
     try:
         height = calculate_height(media['typeMetadata']['width'], media['typeMetadata']['height'], size)
 
-        image = Image.open(media["url"].replace('file://', ''))
-        image.thumbnail((size, height))
-        image.save(path)
+        if exists:
+            image =  Image.open(path)
+        else:
+            image = Image.open(media["url"].replace('file://', ''))
+            image.thumbnail((size, height))
+            image.save(path)
 
         media['url'] = 'file:///' + path.lstrip('/')
         media['typeMetadata']['width'] = size
         media['typeMetadata']['height'] = height
     
-        if 'extraMetadata' not in media or media['extraMetadata'] is None:
-            media['extraMetadata'] = {}
-        media['extraMetadata']['thumbnailOriginalUrl'] = media['url']
+        media = set_em_key(media, 'thumbnailOriginalUrl', media['url'])
     except (UnidentifiedImageError, OSError):
         pass
 

@@ -1,6 +1,6 @@
 from urllib.parse import urlparse, urlunparse
 
-from common import listen, validate_config
+from common import listen, validate_config, set_em_key
 
 def transform(media):
     for target in targets:
@@ -17,7 +17,7 @@ def transform(media):
 
         if 'extraMetadata' not in media or media['extraMetadata'] is None:
             media['extraMetadata'] = {}
-        media['extraMetadata']['proxyOriginalUrl'] = media['url']
+        media = set_em_key(media, 'proxyOriginalUrl', media['url'])
         # "urlunparse".. really?
         media['url'] = urlunparse(url)
 
