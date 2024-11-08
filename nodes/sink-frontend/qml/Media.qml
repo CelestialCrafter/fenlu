@@ -17,12 +17,7 @@ Pane {
         minor: !focused || mouseArea.containsMouse
     }
 
-    function openDetails() {
-        mediaDetails.current = media;
-        mediaDetails.open();
-    }
-
-    Keys.onReturnPressed: openDetails()
+    Keys.onReturnPressed: mediaDetails.open()
 
     ColumnLayout {
         anchors.fill: parent
@@ -71,10 +66,9 @@ Pane {
         onClicked: event => {
             switch (event.button) {
                 case Qt.LeftButton:
-                openDetails();
+                mediaDetails.open();
                 break;
                 case Qt.RightButton:
-                contextMenu.current = media;
                 contextMenu.popup();
                 break;
             }
