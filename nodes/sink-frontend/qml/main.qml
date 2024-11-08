@@ -30,6 +30,13 @@ ApplicationWindow {
         RowLayout {
             anchors.fill: parent
             spacing: 8
+            id: row
+
+            function renderCurrentPage() {
+                MediaList.offset = offset.value;
+                MediaList.rerender();
+                grid.ScrollBar.vertical.position = 0;
+            }
 
             Item {
                 Layout.fillWidth: true
@@ -39,13 +46,10 @@ ApplicationWindow {
                 SpinBox {
                     id: offset
                     width: parent.width
+                    wrap: true
                     stepSize: MediaList.render_amount
                     to: 0
-                    onValueModified: {
-                        MediaList.offset = value;
-                        MediaList.rerender();
-                        grid.ScrollBar.vertical.position = 0;
-                    }
+                    onValueModified: row.renderCurrentPage()
                 }    
 
                 Button {
@@ -64,6 +68,13 @@ ApplicationWindow {
                 Layout.fillHeight: true
                 Layout.preferredWidth: Math.floor(parent.width / cellWidth) * cellWidth
                 Layout.alignment: Qt.AlignRight
+
+                Keys.onPressed: event => {
+                    if (event.key == Qt.Key_Home) grid.currentIndex = 0;
+                    if (event.key == Qt.Key_End) grid.currentIndex = grid.count - 1;
+                    if (event.key == Qt.Key_Equal || event.key == Qt.Key_Plus) offset.increase() || row.renderCurrentPage();
+                    if (event.key == Qt.Key_Minus) offset.decrease() || row.renderCurrentPage();
+                }
 
                 id: grid
                 activeFocusOnTab: true

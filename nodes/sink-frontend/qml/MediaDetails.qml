@@ -4,6 +4,8 @@ import QtQuick.Layouts
 import sinkfrontend
 
 Popup {
+    property real imageMaxWidth: 0.65
+
     padding: 0
     rightPadding: 10
     background: Rectangle {
@@ -32,16 +34,8 @@ Popup {
         return output.join('<br/><br/>');
     }
 
-    property var current: JSON.parse('{"url": "", "title": "", "type": ""}')
-    property real imageMaxWidth: 0.65
-
-    modal: true
-    focus: true
-    anchors.centerIn: Overlay.overlay
-    width: ApplicationWindow.window.width * 0.7
-    height: ApplicationWindow.window.height * 0.5
-    onAboutToShow: {
-        let text = Object.assign({}, current);
+    function setData() {
+        let text = Object.assign({}, grid.currentItem.media);
 
         for (const [k,] of Object.entries(text)) {
             if (k.toLowerCase().includes('url')) {
@@ -56,11 +50,24 @@ Popup {
         }
 
         details.text = renderText(text);
-        media.media = current;
+        media.media = grid.currentItem.media;
     }
+
+    modal: true
+    focus: true
+    anchors.centerIn: Overlay.overlay
+    width: ApplicationWindow.window.width * 0.7
+    height: ApplicationWindow.window.height * 0.5
+    onAboutToShow: setData()
 
     RowLayout {
         anchors.fill: parent
+        focus: true
+
+        Keys.onLeftPressed: grid.moveCurrentIndexLeft() || setData()
+        Keys.onRightPressed: grid.moveCurrentIndexRight() || setData()
+        Keys.onDownPressed: grid.moveCurrentIndexDown() || setData()
+        Keys.onUpPressed: grid.moveCurrentIndexUp() || setData()
 
         Media {
             id: media
@@ -68,7 +75,7 @@ Popup {
             Layout.preferredWidth: Math.max(parent.width * imageMaxWidth,  parent.height)
             Layout.fillHeight: true
 
-            media: current
+            media: {}
             focusEnabled: false
             mipmap: false
         }
