@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import sinkfrontend
 
 Popup {
+    property var current
     property real imageMaxWidth: 0.65
 
     padding: 0
@@ -35,7 +36,7 @@ Popup {
     }
 
     function setData() {
-        let text = Object.assign({}, grid.currentItem.media);
+        let text = Object.assign({}, current);
 
         for (const [k,] of Object.entries(text)) {
             if (k.toLowerCase().includes('url')) {
@@ -50,7 +51,7 @@ Popup {
         }
 
         details.text = renderText(text);
-        media.media = grid.currentItem.media;
+        media.media = current;
     }
 
     modal: true
