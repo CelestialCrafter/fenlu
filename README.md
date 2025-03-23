@@ -1,5 +1,7 @@
 # fenlu
 
+**this project is (mostly) complete.**
+
 simple and extensible all-purpose media organizer inspired by qimgv
 
 ## dependencies
